@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #ec4899;
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: #d8b4fe;
+  --color-secondary-foreground: #1f2937;
+
+  --color-accent: #fbcfe8;
+  --color-accent-foreground: #1f2937;
+
+  --color-background: #fdf2f8;
+  --color-foreground: #1f2937;
+
+  --color-card: #ffffff;
+  --color-card-foreground: #1f2937;
+
+  --color-muted: #f3f4f6;
+  --color-muted-foreground: #6b7280;
+
+  --color-popover: #ffffff;
+  --color-popover-foreground: #1f2937;
+
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+
+  --color-border: #e5e7eb;
+  --color-input: #e5e7eb;
+  --color-ring: #ec4899;
+
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+
+  --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+
+  --animate-wave: wave 1.5s infinite;
+
+  @keyframes wave {
+
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+
+    25% {
+      transform: rotate(-10deg);
+    }
+
+    75% {
+      transform: rotate(10deg);
+    }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer border border-transparent;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-pink-600 shadow-md shadow-pink-200;
+  }
+
+  .btn-danger {
+    @apply bg-destructive text-destructive-foreground hover:bg-red-600;
+  }
+
+  .input,
+  .select {
+    @apply flex h-10 w-full rounded-xl border border-input bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .card {
+    @apply rounded-2xl border border-border bg-card text-card-foreground shadow-soft p-6;
+  }
+
+  .form-group {
+    @apply mb-4 flex flex-col gap-1.5;
+  }
+
+  .form-group label {
+    @apply text-sm font-medium leading-none text-gray-700;
+  }
+
+  /* Login page specific */
+  .login-page {
+    @apply min-h-screen flex items-center justify-center bg-background p-4;
+  }
+}
+
+@layer base {
+  table {
+    @apply w-full caption-bottom text-sm;
+  }
+
+  thead {
+    @apply [&_tr]:border-b;
+  }
+
+  tbody {
+    @apply [&_tr:last-child]:border-0;
+  }
+
+  tr {
+    @apply border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted;
+  }
+
+  th {
+    @apply h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0;
+  }
+
+  td {
+    @apply p-4 align-middle [&:has([role=checkbox])]:pr-0;
+  }
+}
