@@ -5,6 +5,7 @@ import { ArrowLeft, Edit, Wallet } from 'lucide-react';
 import { Card } from '../../components/ui/card';
 import CustomerHistory from '../../components/Customers/CustomerHistory';
 import PaymentModal from '../../components/Customers/PaymentModal';
+import ChargeModal from '../../components/Customers/ChargeModal';
 
 export default function CustomerView() {
     const { id } = useParams();
@@ -14,6 +15,7 @@ export default function CustomerView() {
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [isChargeModalOpen, setIsChargeModalOpen] = useState(false);
 
     useEffect(() => {
         fetchCustomerData();
@@ -98,11 +100,7 @@ export default function CustomerView() {
                     </button>
                     {customer.phone && (
                         <button
-                            onClick={() => {
-                                const cleanPhone = customer.phone.replace(/\D/g, '');
-                                const message = `Olá ${customer.name}, referente ao seu débito de R$ ${debt.toFixed(2)} na BeautyStock.`;
-                                window.open(`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
-                            }}
+                            onClick={() => setIsChargeModalOpen(true)}
                             className="flex-1 bg-green-500 text-white font-semibold py-2 rounded-xl text-sm hover:bg-green-600 active:scale-95 transition-transform"
                         >
                             WhatsApp
@@ -119,6 +117,14 @@ export default function CustomerView() {
                     customerId={id}
                     onClose={() => setIsPaymentModalOpen(false)}
                     onSuccess={fetchCustomerData}
+                />
+            )}
+
+            {isChargeModalOpen && (
+                <ChargeModal
+                    customer={customer}
+                    debt={debt}
+                    onClose={() => setIsChargeModalOpen(false)}
                 />
             )}
         </div>

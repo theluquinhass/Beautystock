@@ -1,42 +1,14 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ArrowUpRight, ArrowDownLeft, Calendar, User } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Calendar, User, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import FAB from '../components/Dashboard/FAB';
+import { useMovements } from '../hooks/useMovements';
 
 export default function Movements() {
     const navigate = useNavigate();
-    const [movements, setMovements] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { movements, loading } = useMovements();
 
-    useEffect(() => {
-        fetchHistory();
-    }, []);
-
-    const fetchHistory = async () => {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            const { data } = await supabase
-                .from('movements')
-                .select(`
-                    id, type, quantity, date, is_on_credit, unit_price,
-                    variations ( name, products ( name, price ) ),
-                    customers ( name )
-                `)
-                .eq('user_id', user.id)
-                .order('date', { ascending: false })
-                .limit(50);
-
-            if (data) setMovements(data);
-        } catch (error) {
-            console.error('Error fetching movements:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    if (loading) return <div className="h-screen flex items-center justify-center text-pink-500 animate-pulse">Carregando extrato...</div>;
+    if (loading) return <div className="h-screen flex items-center justify-center text-pink-500"><Loader2 className="animate-spin" size={32} /></div>;
 
     return (
         <div className="pb-24">
@@ -54,9 +26,9 @@ export default function Movements() {
                     return (
                         <div key={m.id} className="card p-4 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow">
                             <div className="flex items-center gap-4">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isEntry ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${!isEntry ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
                                     }`}>
-                                    {isEntry ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
+                                    {!isEntry ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
                                 </div>
                                 <div>
                                     <h3 className="font-semibold text-gray-800 text-sm leading-tight">
@@ -80,8 +52,8 @@ export default function Movements() {
                             </div>
 
                             <div className="text-right">
-                                <div className={`font-bold ${isEntry ? 'text-green-600' : 'text-gray-900'}`}>
-                                    {isEntry ? '+' : '-'} R$ {totalValue.toFixed(2)}
+                                <div className={`font-bold ${!isEntry ? 'text-green-600' : 'text-red-500'}`}>
+                                    {!isEntry ? '+' : '-'} R$ {totalValue.toFixed(2)}
                                 </div>
                                 <div className="text-xs text-gray-400">
                                     {m.quantity} un
@@ -103,7 +75,8 @@ export default function Movements() {
                 )}
             </div>
 
-            <FAB onClick={() => navigate('/movimentacoes/novo')} />
+            <FAB onClick={() => navigate('/movimentacoes/nova')} label="Nova Venda" />
         </div>
     );
 }
+

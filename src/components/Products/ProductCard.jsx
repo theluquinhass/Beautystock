@@ -7,7 +7,7 @@ export default function ProductCard({ product, onDelete }) {
     const lowStock = totalStock <= (product.min_stock || 0);
 
     return (
-        <Card className="p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+        <Card className="p-4 flex items-center justify-between shadow-soft hover:shadow-md transition-shadow">
             <div className="flex items-center gap-4">
                 {/* Icon Placeholder */}
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${lowStock ? 'bg-red-100 text-red-500' : 'bg-pink-100 text-pink-500'}`}>

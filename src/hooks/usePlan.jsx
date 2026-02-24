@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, createContext } from 'react';
-import { getCurrentUserProfile } from '../lib/planUtils';
+import { subscriptionService } from '../services/subscription.service';
 import { useAuth } from '../contexts/AuthContext';
 
 const PlanContext = createContext({});
@@ -9,7 +9,6 @@ export function PlanProvider({ children }) {
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Function to refresh profile (e.g. after upgrade)
     const refreshPlan = async () => {
         if (!user) {
             setProfile(null);
@@ -18,7 +17,7 @@ export function PlanProvider({ children }) {
         }
 
         try {
-            const data = await getCurrentUserProfile();
+            const data = await subscriptionService.getProfile();
             setProfile(data);
         } catch (error) {
             console.error("Failed to load plan:", error);
@@ -31,8 +30,10 @@ export function PlanProvider({ children }) {
         refreshPlan();
     }, [user]);
 
+    const isPro = subscriptionService.isPro(profile);
+
     return (
-        <PlanContext.Provider value={{ profile, loading, isPro: profile?.plan === 'pro', refreshPlan }}>
+        <PlanContext.Provider value={{ profile, loading, isPro, refreshPlan }}>
             {children}
         </PlanContext.Provider>
     );
@@ -41,3 +42,4 @@ export function PlanProvider({ children }) {
 export function usePlan() {
     return useContext(PlanContext);
 }
+

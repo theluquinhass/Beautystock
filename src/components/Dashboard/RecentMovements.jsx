@@ -27,8 +27,8 @@ export default function RecentMovements({ movements = [] }) {
                         </div>
 
                         <div className="text-right">
-                            <p className="font-semibold text-green-600 text-sm">
-                                +R$ {movement.total.toFixed(2)}
+                            <p className={`font-semibold text-sm ${movement.type === 'ENTRY' ? 'text-red-500' : 'text-green-600'}`}>
+                                {movement.type === 'ENTRY' ? '-' : '+'}R$ {movement.total.toFixed(2)}
                             </p>
                             <p className="text-[10px] text-gray-400">
                                 {format(new Date(movement.date), "dd/MM 'às' HH:mm", { locale: ptBR })}

@@ -14,6 +14,7 @@ serve(async (req) => {
 
     try {
         const { userId, email } = await req.json();
+        console.log(`Starting subscription creation for user: ${userId}, email: ${email}`);
 
         const supabase = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
@@ -21,17 +22,33 @@ serve(async (req) => {
         );
 
         // 1. Get user profile
-        const { data: profile } = await supabase
+        console.log('Fetching user profile...');
+        const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', userId)
-            .single();
+            .maybeSingle();
+
+        if (profileError) {
+            console.error('Error fetching profile:', profileError);
+            throw new Error(`Profile error: ${profileError.message}`);
+        }
 
         if (!profile) {
+            console.error('User not found');
             throw new Error('User not found');
         }
 
-        const client = new MercadoPagoConfig({ accessToken: Deno.env.get('MP_ACCESS_TOKEN') ?? '' });
+        console.log('Profile found:', profile.id);
+
+        const accessToken = Deno.env.get('MP_ACCESS_TOKEN');
+        if (!accessToken) {
+            console.error('MP_ACCESS_TOKEN is missing');
+            throw new Error('Server configuration error: MP_ACCESS_TOKEN missing');
+        }
+        console.log('MP Access Token prefix:', accessToken.substring(0, 5) + '...');
+
+        const client = new MercadoPagoConfig({ accessToken: accessToken });
         const customerClient = new Customer(client);
         const preapprovalClient = new PreApproval(client);
 
@@ -39,9 +56,23 @@ serve(async (req) => {
 
         // 2. Create/Get Customer in Mercado Pago
         if (!customerId) {
+            console.log('Creating/Finding customer in Mercado Pago...');
+
+            // Ensure we have a valid first name
+            let firstName = profile.first_name || '';
+            let lastName = profile.last_name || '';
+
+            if (!firstName) {
+                // Fallback to email prefix or default
+                firstName = email.split('@')[0].replace(/[^a-zA-Z\s]/g, '') || 'Cliente';
+            }
+
+            console.log(`Using customer name: ${firstName} ${lastName}`);
+
             const customerData = {
                 email: email,
-                first_name: email.split('@')[0], // Fallback name
+                first_name: firstName,
+                last_name: lastName
             };
 
             // Search if customer already exists by email to avoid duplicates
@@ -49,9 +80,12 @@ serve(async (req) => {
 
             if (searchCustomer.results && searchCustomer.results.length > 0) {
                 customerId = searchCustomer.results[0].id;
+                console.log('Customer found in MP:', customerId);
             } else {
+                console.log('Creating new customer with data:', JSON.stringify(customerData));
                 const newCustomer = await customerClient.create({ body: customerData });
                 customerId = newCustomer.id;
+                console.log('New customer created in MP:', customerId);
             }
 
             // Update profile with mp_customer_id
@@ -59,12 +93,19 @@ serve(async (req) => {
                 .from('profiles')
                 .update({ mp_customer_id: customerId })
                 .eq('id', userId);
+        } else {
+            console.log('Using existing customer ID:', customerId);
         }
 
         // 3. Create Subscription (PreApproval)
+        console.log('Creating preapproval for customer:', customerId);
+
+        const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://beautystock-app.vercel.app';
+        const backUrl = `${frontendUrl}/dashboard`;
+
         const subscriptionData = {
             payer_email: email,
-            back_url: 'https://beautystock-app.vercel.app/dashboard', // Adjust to your production URL
+            back_url: backUrl,
             reason: 'BeautyStock PRO - Mensal',
             auto_recurring: {
                 frequency: 1,
@@ -77,6 +118,7 @@ serve(async (req) => {
         };
 
         const subscription = await preapprovalClient.create({ body: subscriptionData });
+        console.log('Subscription created:', subscription.id);
 
         return new Response(
             JSON.stringify({
@@ -90,8 +132,9 @@ serve(async (req) => {
         );
 
     } catch (error) {
+        console.error('Error in create-subscription:', error);
         return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify({ error: error.message, stack: error.stack }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                 status: 400,

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { authService } from '../services/auth.service';
 
 const AuthContext = createContext({});
 
@@ -11,14 +11,18 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         // Check active session
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        authService.getSession().then((session) => {
             setUser(session?.user ?? null);
+            setLoading(false);
+        }).catch(err => {
+            console.error("Auth initialization error:", err);
             setLoading(false);
         });
 
         // Listen for changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = authService.onAuthStateChange((_event, session) => {
             setUser(session?.user ?? null);
+            setLoading(false);
         });
 
         return () => subscription.unsubscribe();
@@ -26,7 +30,7 @@ export const AuthProvider = ({ children }) => {
 
     const value = {
         user,
-        signOut: () => supabase.auth.signOut(),
+        signOut: authService.signOut,
     };
 
     return (
@@ -35,3 +39,4 @@ export const AuthProvider = ({ children }) => {
         </AuthContext.Provider>
     );
 };
+

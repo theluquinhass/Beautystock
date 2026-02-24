@@ -2,7 +2,7 @@ import { LogOut, Crown } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePlan } from '../../hooks/usePlan';
 
-export default function Header({ userName = "Ana", subtitle }) {
+export default function Header({ userName, subtitle }) {
     const { signOut } = useAuth();
     const { isPro } = usePlan();
 
@@ -10,7 +10,7 @@ export default function Header({ userName = "Ana", subtitle }) {
         <header className="mb-6 pt-2 flex justify-between items-start">
             <div>
                 <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold text-gray-800">
+                    <h1 className="text-xl font-bold text-gray-800">
                         Olá, {userName} <span className="inline-block animate-wave">👋</span>
                     </h1>
                     {isPro ? (
