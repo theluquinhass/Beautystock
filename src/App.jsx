@@ -15,6 +15,9 @@ const ProductList = lazy(() => import('./pages/Products/ProductList'));
 const ProductForm = lazy(() => import('./pages/Products/ProductForm'));
 const Movements = lazy(() => import('./pages/Movements'));
 
+import { OnboardingProvider } from './contexts/OnboardingContext';
+import BibiOnboardingFlow from './components/Onboarding/BibiOnboardingFlow';
+
 // Direct import to avoid potential lazy loading issues
 import MovementForm from './pages/Movements/MovementForm';
 const Account = lazy(() => import('./pages/Account'));
@@ -34,34 +37,36 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <PlanProvider>
-          <Toaster position="top-right" />
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/login" element={<Login />} />
+          <OnboardingProvider>
+            <Toaster position="top-right" />
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/login" element={<Login />} />
 
-              <Route element={<PrivateRoute />}>
-                <Route element={<Layout />}>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/produtos" element={<ProductList />} />
-                  <Route path="/produtos/novo" element={<ProductForm />} />
-                  <Route path="/produtos/:id" element={<ProductForm />} />
-                  <Route path="/movimentacoes" element={<Movements />} />
-                  <Route path="/movimentacoes/nova" element={<MovementForm />} />
-                  <Route path="/conta" element={<Account />} />
+                <Route element={<PrivateRoute />}>
+                  <Route element={<Layout />}>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/produtos" element={<ProductList />} />
+                    <Route path="/produtos/novo" element={<ProductForm />} />
+                    <Route path="/produtos/:id" element={<ProductForm />} />
+                    <Route path="/movimentacoes" element={<Movements />} />
+                    <Route path="/movimentacoes/nova" element={<MovementForm />} />
+                    <Route path="/conta" element={<Account />} />
 
-                  {/* PRO Protected Routes */}
-                  <Route path="/clientes" element={<RequirePro><CustomersList /></RequirePro>} />
-                  <Route path="/clientes/novo" element={<RequirePro><CustomerFormPage /></RequirePro>} />
-                  <Route path="/clientes/:id" element={<RequirePro><CustomerView /></RequirePro>} />
-                  <Route path="/clientes/:id/editar" element={<RequirePro><CustomerFormPage /></RequirePro>} />
+                    {/* PRO Protected Routes */}
+                    <Route path="/clientes" element={<RequirePro><CustomersList /></RequirePro>} />
+                    <Route path="/clientes/novo" element={<RequirePro><CustomerFormPage /></RequirePro>} />
+                    <Route path="/clientes/:id" element={<RequirePro><CustomerView /></RequirePro>} />
+                    <Route path="/clientes/:id/editar" element={<RequirePro><CustomerFormPage /></RequirePro>} />
 
-                  <Route path="/upgrade" element={<Upgrade />} />
+                    <Route path="/upgrade" element={<Upgrade />} />
+                  </Route>
                 </Route>
-              </Route>
 
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-          </Suspense>
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            </Suspense>
+          </OnboardingProvider>
         </PlanProvider>
       </AuthProvider>
     </BrowserRouter>

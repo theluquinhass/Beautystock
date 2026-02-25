@@ -7,10 +7,9 @@ export default function CustomerForm({ initialData = {} }) {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
-        name: '',
-        phone: '',
-        notes: '',
-        ...initialData
+        name: initialData.name || '',
+        phone: initialData.phone || '',
+        notes: initialData.notes || ''
     });
 
     const isEditing = !!initialData.id;
@@ -29,14 +28,15 @@ export default function CustomerForm({ initialData = {} }) {
                     .eq('id', initialData.id);
                 if (error) throw error;
                 toast.success('Cliente atualizado!');
+                navigate(`/clientes/${initialData.id}`);
             } else {
                 const { error } = await supabase
                     .from('customers')
                     .insert({ ...formData, user_id: user.id });
                 if (error) throw error;
                 toast.success('Cliente cadastrado!');
+                navigate('/clientes');
             }
-            navigate('/clientes');
         } catch (error) {
             console.error(error);
             toast.error('Erro ao salvar cliente');

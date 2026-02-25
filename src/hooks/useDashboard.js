@@ -46,7 +46,7 @@ export function useDashboard() {
                 { data: movements },
                 { data: payments }
             ] = await Promise.all([
-                supabase.from('products').select('id, cost, price, variations(id, stock_quantity)').eq('user_id', user.id),
+                supabase.from('products').select('id, name, cost, price, variations(id, stock_quantity)').eq('user_id', user.id),
                 supabase.from('movements').select('*').eq('user_id', user.id),
                 supabase.from('payments').select('customer_id, amount').eq('user_id', user.id)
             ]);

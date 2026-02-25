@@ -4,7 +4,7 @@ export const PLANS = {
     FREE: {
         name: 'free',
         limits: {
-            products: 5,
+            products: 10,
             customers: false, // Access allowed? False = No
             reports: false,
         }

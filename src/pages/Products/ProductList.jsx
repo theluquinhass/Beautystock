@@ -46,7 +46,7 @@ export default function ProductList() {
                 <div className="flex items-center gap-2">
                     {!isPro && (
                         <span className="text-[10px] font-bold bg-pink-100 text-pink-600 px-2.5 py-1 rounded-full uppercase tracking-wider">
-                            {products.length}/5 Produtos
+                            {products.length}/10 Produtos
                         </span>
                     )}
                 </div>
@@ -102,7 +102,9 @@ export default function ProductList() {
                 )}
             </div>
 
-            <FAB onClick={() => navigate('/produtos/novo')} label="Novo Produto" />
+            <div data-onboarding="add-product">
+                <FAB onClick={() => navigate('/produtos/novo')} label="Novo Produto" />
+            </div>
 
             {showImporter && (
                 <ProductImporter

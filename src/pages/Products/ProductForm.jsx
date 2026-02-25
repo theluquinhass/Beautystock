@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Plus, Trash, ArrowLeft, Lock, Box, Layers, Save } from 'lucide-react';
+import { Plus, Trash, ArrowLeft, Lock, Box, Layers, Save, Loader2 } from 'lucide-react';
 import { usePlan } from '../../hooks/usePlan';
 import { canAddProduct } from '../../lib/planUtils';
 
@@ -103,7 +103,7 @@ export default function ProductForm() {
                                     Limite Atingido!
                                 </p>
                                 <p className="mt-1 text-sm text-gray-500">
-                                    Seu plano grátis permite apenas 5 produtos.
+                                    Seu plano grátis permite apenas 10 produtos.
                                 </p>
                             </div>
                         </div>

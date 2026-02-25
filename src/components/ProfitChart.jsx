@@ -5,10 +5,12 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { usePlan } from '../hooks/usePlan';
 import { Crown, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function ProfitChart() {
     const { user } = useAuth();
     const { isPro } = usePlan();
+    const navigate = useNavigate();
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [days, setDays] = useState(30);
@@ -89,32 +91,43 @@ export default function ProfitChart() {
 
     if (!isPro) {
         return (
-            <div className="bg-white rounded-3xl p-6 shadow-soft border border-gray-100 relative overflow-hidden">
-                <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center p-6 text-center">
-                    <div className="bg-pink-100 p-3 rounded-full mb-3">
-                        <Lock className="text-pink-500" size={24} />
+            <div className="bg-white rounded-3xl p-6 shadow-soft border border-gray-100 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-white/70 backdrop-blur-[4px] z-10 flex flex-col items-center justify-center p-6 text-center transition-all duration-300 group-hover:bg-white/60">
+                    <div className="bg-pink-100 p-4 rounded-full mb-4 shadow-[0_0_30px_rgba(236,72,153,0.3)] animate-pulse">
+                        <Lock className="text-pink-500 animate-bounce" size={28} />
                     </div>
-                    <h3 className="text-gray-800 font-bold mb-1">Crescimento de Lucro</h3>
-                    <div className="flex items-center gap-2 text-pink-600 font-bold bg-pink-50 px-4 py-2 rounded-full text-xs mt-2 border border-pink-100">
-                        <Crown size={14} />
-                        Disponível no plano PRO
-                    </div>
+                    <h3 className="text-gray-800 font-extrabold mb-2 text-xl tracking-tight">Escale seus lucros. 🚀</h3>
+                    <p className="text-gray-600 text-sm font-medium mb-6 max-w-[280px] leading-relaxed">
+                        Pare de adivinhar. Descubra exatamente em quais dias você lucra mais e tome decisões de compra inteligentes.
+                    </p>
+                    <button
+                        onClick={() => navigate('/upgrade')}
+                        className="flex items-center justify-center gap-2 w-full max-w-[240px] bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-pink-500/30 transition-all hover:-translate-y-1 active:scale-95 border border-pink-400/50"
+                    >
+                        <Crown size={18} className="text-yellow-300 fill-yellow-300" />
+                        Desbloquear PRO
+                    </button>
                 </div>
 
-                {/* Blurred Background Content */}
-                <div className="opacity-30 pointer-events-none filter blur-sm">
+                {/* Blurred Background Content (Fake Chart) */}
+                <div className="opacity-40 pointer-events-none filter blur-sm select-none">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-lg font-bold text-gray-800">Crescimento de Lucro</h3>
+                        <div className="flex bg-gray-50 p-1 rounded-xl">
+                            <span className="px-3 py-1 text-xs font-medium text-gray-400">7 Dias</span>
+                            <span className="px-3 py-1 text-xs font-medium text-gray-400 bg-white shadow-sm rounded-lg">30 Dias</span>
+                        </div>
                     </div>
-                    <div className="h-[200px] w-full flex items-end justify-between gap-2 px-2">
-                        {/* Fake chart bars */}
-                        <div className="w-full bg-pink-200 h-[20%] rounded-t"></div>
-                        <div className="w-full bg-pink-200 h-[35%] rounded-t"></div>
-                        <div className="w-full bg-pink-200 h-[50%] rounded-t"></div>
-                        <div className="w-full bg-pink-200 h-[45%] rounded-t"></div>
-                        <div className="w-full bg-pink-200 h-[60%] rounded-t"></div>
-                        <div className="w-full bg-pink-200 h-[75%] rounded-t"></div>
-                        <div className="w-full bg-pink-200 h-[90%] rounded-t"></div>
+                    {/* Fake Chart Waves */}
+                    <div className="h-[200px] w-full flex items-end justify-between gap-2 px-1 relative">
+                        {/* Decorative Grid Lines */}
+                        <div className="absolute inset-0 flex flex-col justify-between opacity-30">
+                            {[1, 2, 3, 4].map(i => <div key={i} className="w-full h-px border-t border-dashed border-gray-300"></div>)}
+                        </div>
+                        {/* Fake Bars representing growth */}
+                        {[20, 35, 25, 45, 60, 50, 75, 85, 70, 95].map((h, i) => (
+                            <div key={i} className="w-full bg-gradient-to-t from-pink-500/20 to-pink-400 rounded-t-sm" style={{ height: `${h}%` }}></div>
+                        ))}
                     </div>
                 </div>
             </div>

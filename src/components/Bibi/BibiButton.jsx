@@ -15,17 +15,6 @@ export default function BibiButton() {
     if (location.pathname === '/conta') return null;
 
     const handleClick = () => {
-        if (!isPro) {
-            toast('Bibi Inteligente é exclusiva do plano PRO 💖', {
-                icon: '✨',
-                style: {
-                    borderRadius: '16px',
-                    background: '#333',
-                    color: '#fff',
-                },
-            });
-            return;
-        }
         setIsOpen(!isOpen);
     };
 

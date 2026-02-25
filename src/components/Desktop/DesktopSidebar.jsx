@@ -39,6 +39,7 @@ export default function DesktopSidebar() {
             <div className="p-4">
                 <Link
                     to="/movimentacoes/nova"
+                    data-onboarding="add-movement"
                     className="w-full flex items-center justify-center gap-2 bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 rounded-2xl shadow-soft transition-all hover:shadow-md hover:-translate-y-0.5"
                 >
                     <PlusCircle size={20} />

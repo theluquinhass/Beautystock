@@ -36,6 +36,7 @@ export default function DesktopTopbar() {
                 {showNewProductBtn && (
                     <Link
                         to="/produtos/novo"
+                        data-onboarding="add-product"
                         className="flex items-center gap-2 bg-purple-50 hover:bg-purple-100 text-purple-600 font-bold py-2.5 px-4 rounded-xl shadow-sm border border-purple-100/50 transition-all hover:-translate-y-0.5"
                     >
                         <PackagePlus size={18} strokeWidth={2.5} />

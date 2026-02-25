@@ -18,9 +18,11 @@ export default function MovementForm() {
     // Form State
     const [type, setType] = useState('EXIT'); // 'EXIT' (Venda) | 'ENTRY' (Recebimento de Estoque)
 
-    // Cart State
+    // Cart & Discount State
     const [cart, setCart] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [discountType, setDiscountType] = useState('NONE'); // 'NONE' | 'PERCENTAGE' | 'FIXED'
+    const [discountValue, setDiscountValue] = useState('');
 
     // Checkbox & Optional
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
@@ -153,10 +155,26 @@ export default function MovementForm() {
         setNotes('');
         setSelectedCustomerId('');
         setIsOnCredit(false);
+        setDiscountType('NONE');
+        setDiscountValue('');
     }
 
-    const cartTotal = cart.reduce((acc, item) => acc + (item.unit_price * item.quantity), 0);
     const cartItemsCount = cart.reduce((a, b) => a + b.quantity, 0);
+    const cartSubtotal = cart.reduce((acc, item) => acc + (item.unit_price * item.quantity), 0);
+
+    let discountAmount = 0;
+    const numDiscountValue = Number(discountValue) || 0;
+    if (type === 'EXIT' && numDiscountValue > 0) {
+        if (discountType === 'PERCENTAGE') {
+            discountAmount = cartSubtotal * (numDiscountValue / 100);
+        } else if (discountType === 'FIXED') {
+            discountAmount = numDiscountValue;
+        }
+    }
+
+    // Ensure discount isn't greater than subtotal
+    discountAmount = Math.min(discountAmount, cartSubtotal);
+    const cartTotal = cartSubtotal - discountAmount;
 
     // --- SUBMIT LOGIC ---
     const handleSubmit = async (e) => {
@@ -178,6 +196,13 @@ export default function MovementForm() {
             const { data: { user } } = await supabase.auth.getUser();
 
             if (type === 'EXIT') {
+                // Determine discount ratio for proportional distribution
+                let ratio = 1;
+                // If there's a discount, calculate the ratio to apply to each item's unit price
+                if (cartSubtotal > 0 && discountAmount > 0) {
+                    ratio = cartTotal / cartSubtotal;
+                }
+
                 // MULTI-PRODUCT SALE VIA RPC
                 const payload = {
                     p_user_id: user.id,
@@ -187,7 +212,7 @@ export default function MovementForm() {
                     p_items: cart.map(item => ({
                         variation_id: item.variation_id,
                         quantity: item.quantity,
-                        unit_price: item.unit_price
+                        unit_price: Number((item.unit_price * ratio).toFixed(2)) // Ratear desconto centavo por centavo
                     }))
                 };
 
@@ -506,27 +531,98 @@ export default function MovementForm() {
                             </div>
                         )}
 
-                        {/* Checkout Footer */}
-                        <div className="mt-auto pt-4 border-t border-gray-100">
-                            <div className="flex items-end justify-between px-1 mb-4">
-                                <div className="flex flex-col">
-                                    <span className="text-gray-500 font-medium text-sm">{type === 'EXIT' ? 'Total da Venda' : 'Custo Total da Entrada'}</span>
-                                    <span className="text-xs text-gray-400 font-medium mt-0.5">{cartItemsCount} unidades</span>
+                        {/* Resumo da Venda / Checkout Footer */}
+                        <div className="mt-auto flex flex-col gap-5 pt-4 border-t border-gray-100">
+                            {/* Discount Section */}
+                            {type === 'EXIT' && cart.length > 0 && (
+                                <div className="bg-gray-50/80 border border-gray-100 rounded-2xl p-4 animate-in fade-in">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Desconto</span>
+                                        <div className="flex bg-white border border-gray-200 p-1 rounded-xl shadow-sm">
+                                            <button
+                                                type="button"
+                                                onClick={() => { setDiscountType('NONE'); setDiscountValue(''); }}
+                                                className={cn("px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all", discountType === 'NONE' ? "bg-gray-100 text-gray-800" : "text-gray-400 hover:text-gray-600")}
+                                            >
+                                                Nenhum
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setDiscountType('PERCENTAGE')}
+                                                className={cn("px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all", discountType === 'PERCENTAGE' ? "bg-pink-50 text-pink-600" : "text-gray-400 hover:text-gray-600")}
+                                            >
+                                                % (Porc.)
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setDiscountType('FIXED')}
+                                                className={cn("px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all", discountType === 'FIXED' ? "bg-pink-50 text-pink-600" : "text-gray-400 hover:text-gray-600")}
+                                            >
+                                                R$ (Fixo)
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Discount Input - Always visible but disabled if NONE */}
+                                    <div className="relative">
+                                        {discountType === 'FIXED' && <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">R$</span>}
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step={discountType === 'PERCENTAGE' ? "1" : "0.01"}
+                                            value={discountType === 'NONE' ? '' : discountValue}
+                                            onChange={e => setDiscountValue(e.target.value)}
+                                            placeholder={discountType === 'NONE' ? "Sem desconto" : discountType === 'PERCENTAGE' ? "Ex: 10" : "Ex: 15.00"}
+                                            disabled={discountType === 'NONE'}
+                                            className={cn(
+                                                "w-full bg-white border rounded-xl focus:ring-4 focus:ring-pink-50 focus:border-pink-300 font-bold text-gray-800 transition-all text-sm outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-sm",
+                                                discountType === 'NONE' ? "bg-gray-100/50 text-gray-400 cursor-not-allowed border-gray-200 py-3 px-4 shadow-none" : discountType === 'FIXED' ? "border-gray-200 py-3 pr-3 pl-12" : "border-gray-200 py-3 pl-3 pr-12"
+                                            )}
+                                        />
+                                        {discountType === 'PERCENTAGE' && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">%</span>}
+                                    </div>
                                 </div>
-                                <span className={cn("text-2xl font-black tracking-tight", type === 'ENTRY' ? "text-emerald-700" : "text-gray-900")}>
+                            )}
+
+                            {/* Summary Details */}
+                            <div className="bg-white flex flex-col gap-3 px-1">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500 font-medium">Subtotal ({cartItemsCount} {cartItemsCount === 1 ? 'item' : 'itens'})</span>
+                                    <span className="text-gray-700 font-semibold">R$ {cartSubtotal.toFixed(2)}</span>
+                                </div>
+
+                                {type === 'EXIT' && (
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-500 font-medium">Desconto</span>
+                                        <span className={cn("font-semibold", discountAmount > 0 ? "text-emerald-500" : "text-gray-400")}>
+                                            {discountAmount > 0 ? `- R$ ${discountAmount.toFixed(2)}` : 'R$ 0.00'}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="border-t border-gray-100 border-dashed"></div>
+
+                            {/* Final Total */}
+                            <div className="flex items-end justify-between px-1">
+                                <div className="flex flex-col">
+                                    <span className="text-gray-800 font-bold">{type === 'EXIT' ? 'Total da Venda' : 'Total da Entrada'}</span>
+                                    <span className="text-xs text-gray-400 font-medium mt-0.5">Valores em Reais (BRL)</span>
+                                </div>
+                                <span className={cn("text-4xl font-black tracking-tighter", type === 'ENTRY' ? "text-emerald-600" : "text-pink-500")}>
                                     R$ {cartTotal.toFixed(2)}
                                 </span>
                             </div>
 
+                            {/* Submit Button */}
                             <button
                                 onClick={handleSubmit}
                                 disabled={submitting || cart.length === 0}
                                 className={cn(
-                                    "w-full text-white font-black text-lg py-4 rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2",
-                                    submitting || cart.length === 0 ? "opacity-50 cursor-not-allowed" : "",
-                                    type === 'ENTRY'
-                                        ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30"
-                                        : "bg-pink-500 hover:bg-pink-600 shadow-pink-500/30"
+                                    "w-full text-white font-bold text-[17px] py-4 rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-2",
+                                    submitting || cart.length === 0 ? "opacity-50 cursor-not-allowed bg-gray-200 text-gray-400" : type === 'ENTRY'
+                                        ? "bg-emerald-500 hover:bg-emerald-600 shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)] hover:-translate-y-0.5"
+                                        : "bg-pink-500 hover:bg-pink-600 shadow-[0_4px_14px_0_rgba(236,72,153,0.39)] hover:shadow-[0_6px_20px_rgba(236,72,153,0.23)] hover:-translate-y-0.5"
                                 )}
                             >
                                 {submitting ? <Loader2 className="animate-spin" size={24} /> : <Save size={24} />}

@@ -6,6 +6,7 @@ import { usePlan } from '../hooks/usePlan';
 import DesktopSidebar from './Desktop/DesktopSidebar';
 import DesktopTopbar from './Desktop/DesktopTopbar';
 import BibiButton from './Bibi/BibiButton';
+import BibiOnboardingFlow from './Onboarding/BibiOnboardingFlow';
 
 export default function Layout() {
     const location = useLocation();
@@ -71,6 +72,9 @@ export default function Layout() {
 
                 {/* Global Bibi Floating Assistant */}
                 <BibiButton />
+
+                {/* Global Bibi Onboarding Flow */}
+                <BibiOnboardingFlow />
 
             </div>
         </div>

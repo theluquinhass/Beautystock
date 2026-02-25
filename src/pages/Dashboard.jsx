@@ -42,7 +42,7 @@ export default function Dashboard() {
 
                 {/* 2. Grid for Profit & Sales */}
                 <div className="grid grid-cols-2 gap-3 lg:col-span-6 lg:grid-cols-2 lg:gap-6">
-                    <div className="h-full">
+                    <div className="h-full" data-onboarding="profit-card">
                         <StatCard
                             title="Lucro (Mês)"
                             value={`R$ ${stats.profit.toFixed(2)}`}
@@ -97,7 +97,7 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            <div className="lg:hidden">
+            <div className="lg:hidden" data-onboarding="add-movement">
                 <FAB onClick={() => navigate('/movimentacoes/nova')} label="Nova Venda" />
             </div>
         </div>

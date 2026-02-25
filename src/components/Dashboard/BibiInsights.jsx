@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePlan } from '../../hooks/usePlan';
-import { Sparkles, Lock, AlertTriangle, AlertCircle, Clock } from 'lucide-react';
-import { subDays, formatISO } from 'date-fns';
+import { Sparkles, Lock, TrendingDown, Crown } from 'lucide-react';
+import { generateBibiInsights, sortRestockAlerts } from '../Bibi/bibiUtils';
 
 export default function BibiInsights() {
+    const navigate = useNavigate();
     const { user } = useAuth();
     const { isPro } = usePlan();
     const [insights, setInsights] = useState([]);
@@ -20,72 +21,10 @@ export default function BibiInsights() {
     const fetchInsights = async () => {
         setLoading(true);
         try {
-            const thirtyDaysAgo = subDays(new Date(), 30);
-
-            // 1. Fetch products and their variations (for current stock)
-            const { data: productsData, error: productsError } = await supabase
-                .from('products')
-                .select(`
-                    id, 
-                    name, 
-                    variations(id, name, stock_quantity)
-                `)
-                .eq('user_id', user.id);
-
-            if (productsError) throw productsError;
-
-            // 2. Fetch sales from the last 30 days
-            const { data: movementsData, error: movementsError } = await supabase
-                .from('movements')
-                .select('variation_id, quantity')
-                .eq('user_id', user.id)
-                .eq('type', 'EXIT')
-                .gte('date', formatISO(thirtyDaysAgo));
-
-            if (movementsError) throw movementsError;
-
-            // 3. Process the data
-            const salesPerVariation = {};
-            movementsData.forEach(m => {
-                if (!salesPerVariation[m.variation_id]) {
-                    salesPerVariation[m.variation_id] = 0;
-                }
-                salesPerVariation[m.variation_id] += m.quantity;
-            });
-
-            const results = [];
-
-            productsData.forEach(product => {
-                product.variations?.forEach(variation => {
-                    const totalSold = salesPerVariation[variation.id] || 0;
-                    const stock = variation.stock_quantity || 0;
-
-                    const avgDailySales = totalSold / 30;
-
-                    if (avgDailySales > 0) {
-                        const daysRemaining = avgDailySales > 0 ? (stock / avgDailySales) : 999;
-
-                        // If we have less than 15 days of stock, Bibi alerts us!
-                        if (daysRemaining < 15) {
-                            const recommendedRestock = Math.ceil(avgDailySales * 30); // Recommend enough for 30 days
-
-                            results.push({
-                                product_name: `${product.name} ${variation.name !== 'Padrão' ? `- ${variation.name}` : ''}`,
-                                stock,
-                                avg_daily_sales: avgDailySales,
-                                days_remaining: Math.floor(daysRemaining),
-                                recommended_restock: recommendedRestock
-                            });
-                        }
-                    }
-                });
-            });
-
-            // Sort by most critical (lowest days remaining)
-            results.sort((a, b) => a.days_remaining - b.days_remaining);
-
-            setInsights(results);
-
+            const data = await generateBibiInsights(user.id, 30, 30);
+            // Display top 3 most critical restock alerts
+            const sorted = sortRestockAlerts(data.restockAlerts, 'acaba_mais_rapido').slice(0, 3);
+            setInsights(sorted);
         } catch (error) {
             console.error('Error fetching Bibi insights:', error);
         } finally {
@@ -95,32 +34,46 @@ export default function BibiInsights() {
 
     if (!isPro) {
         return (
-            <div className="bg-white rounded-3xl p-6 shadow-soft border border-gray-100 relative overflow-hidden h-full">
-                <div className="absolute inset-0 bg-white/70 backdrop-blur-[3px] z-10 flex flex-col items-center justify-center p-6 text-center">
-                    <div className="bg-gradient-to-br from-pink-400 to-rose-500 p-3 rounded-2xl mb-3 shadow-lg shadow-pink-200">
-                        <Lock className="text-white" size={24} />
+            <div className="bg-white rounded-[32px] p-6 shadow-soft border border-pink-100 h-full flex flex-col relative overflow-hidden group">
+                <div className="absolute inset-0 bg-white/70 backdrop-blur-[4px] z-10 flex flex-col items-center justify-center p-6 text-center transition-all duration-300 group-hover:bg-white/60">
+                    <div className="bg-gradient-to-br from-pink-400 to-rose-500 p-4 rounded-full mb-4 shadow-[0_0_30px_rgba(236,72,153,0.3)] animate-pulse">
+                        <Lock className="text-white animate-bounce" size={28} />
                     </div>
-                    <h3 className="text-gray-800 font-bold mb-1 text-lg">Bibi Inteligente</h3>
-                    <p className="text-gray-500 text-xs mb-3 font-medium">Previsão automática de reposição de estoque</p>
-                    <div className="flex items-center gap-2 text-pink-600 font-bold bg-pink-50 px-4 py-2 rounded-xl text-xs border border-pink-100">
-                        <Sparkles size={14} />
-                        Disponível no plano PRO
-                    </div>
+                    <h3 className="text-gray-800 font-extrabold mb-2 text-xl tracking-tight">Estoque inteligente ✨</h3>
+                    <p className="text-gray-600 text-sm font-medium mb-6 max-w-[280px] leading-relaxed">
+                        Esqueceu de comprar? A Bibi prevê automaticamente o que vai faltar no seu estoque antes de você perder vendas!
+                    </p>
+                    <button
+                        onClick={() => navigate('/upgrade')}
+                        className="flex items-center justify-center gap-2 w-full max-w-[240px] bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-pink-500/30 transition-all hover:-translate-y-1 active:scale-95 border border-pink-400/50"
+                    >
+                        <Crown size={18} className="text-yellow-300 fill-yellow-300" />
+                        Desbloquear PRO
+                    </button>
                 </div>
 
-                {/* Blurred Background Content */}
-                <div className="opacity-30 pointer-events-none filter blur-sm">
+                {/* Blurred Background Content (Fake Alert List) */}
+                <div className="opacity-40 pointer-events-none filter blur-sm select-none">
                     <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-6">
                         <Sparkles className="text-pink-500" size={20} />
                         Bibi recomenda
                     </h3>
-                    <div className="space-y-4">
-                        {[1, 2, 3].map(i => (
-                            <div key={i} className="bg-gray-50 rounded-2xl p-4 flex gap-3">
-                                <div className="w-10 h-10 bg-gray-200 rounded-xl" />
-                                <div className="flex-1 space-y-2">
-                                    <div className="h-4 bg-gray-200 rounded w-3/4" />
-                                    <div className="h-3 bg-gray-200 rounded w-1/2" />
+                    <div className="space-y-3">
+                        {[
+                            { name: 'Shampoo Neutro 500ml', restock: '3 dias', num: '12' },
+                            { name: 'Condicionador Hidratante', restock: '5 dias', num: '8' },
+                            { name: 'Máscara Capilar Premium', restock: '7 dias', num: '5' }
+                        ].map((mock, i) => (
+                            <div key={i} className="px-4 py-3 rounded-2xl border border-gray-100 bg-gray-50 flex flex-col">
+                                <h4 className="font-bold text-gray-700 text-sm mb-2">{mock.name}</h4>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5 text-[10px] text-gray-500 font-bold uppercase">
+                                        <TrendingDown size={14} className="text-rose-400" />
+                                        Acaba em {mock.restock}
+                                    </div>
+                                    <div className="text-xs font-black text-emerald-600 bg-emerald-100/50 px-2 py-1 rounded-md">
+                                        + {mock.num} unts
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -130,37 +83,18 @@ export default function BibiInsights() {
         );
     }
 
-    const getStatusConfig = (days) => {
-        if (days < 5) return { color: 'text-red-500', bg: 'bg-red-50 border-red-100', icon: AlertOctagon, label: 'Crítico' };
-        if (days <= 10) return { color: 'text-orange-500', bg: 'bg-orange-50 border-orange-100', icon: AlertTriangle, label: 'Atenção' };
-        return { color: 'text-yellow-600', bg: 'bg-yellow-50 border-yellow-100', icon: AlertCircle, label: 'Alerta' };
-    };
-
-    // Fallback icon since AlertOctagon isn't imported, use AlertTriangle for critical too, but let me just map it
-    const getBadgeStyle = (days) => {
-        if (days < 5) return "text-red-600 bg-red-50 border-red-100";
-        if (days <= 10) return "text-orange-600 bg-orange-50 border-orange-100";
-        return "text-yellow-600 bg-yellow-50 border-yellow-100";
-    };
-
-    const getIcon = (days) => {
-        if (days < 5) return <AlertTriangle size={14} className="text-red-500" />;
-        if (days <= 10) return <AlertCircle size={14} className="text-orange-500" />;
-        return <Clock size={14} className="text-yellow-500" />;
-    };
-
     return (
-        <div className="bg-white rounded-3xl p-6 shadow-soft border border-pink-100 h-full flex flex-col relative overflow-hidden">
+        <div className="bg-white rounded-[32px] p-6 shadow-soft border border-pink-100 h-full flex flex-col relative overflow-hidden group hover:shadow-lg transition-all">
             {/* Soft decorative background */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-pink-50 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-pink-50 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-110" />
 
-            <div className="flex items-center gap-2 mb-6 relative z-10">
-                <div className="p-2 bg-gradient-to-br from-pink-400 to-rose-500 rounded-xl shadow-md shadow-pink-200">
-                    <Sparkles className="text-white" size={18} />
+            <div className="flex items-center gap-3 mb-6 relative z-10">
+                <div className="p-2.5 bg-gradient-to-br from-pink-400 to-rose-500 rounded-2xl shadow-md shadow-pink-200">
+                    <Sparkles className="text-white" size={20} />
                 </div>
                 <div>
-                    <h3 className="text-lg font-bold text-gray-800 tracking-tight">Bibi recomenda</h3>
-                    <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Consultoria de Estoque</p>
+                    <h3 className="text-xl font-bold text-gray-800 tracking-tight leading-none">Bibi recomenda</h3>
+                    <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mt-1">Consultoria de Estoque</p>
                 </div>
             </div>
 
@@ -173,33 +107,46 @@ export default function BibiInsights() {
                 ) : insights.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-gray-400 py-10 opacity-70">
                         <Sparkles size={32} className="mb-3" strokeWidth={1} />
-                        <p className="text-sm font-medium text-center px-4">Estoque muito saudável!</p>
-                        <p className="text-xs text-center mt-1">Nenhum produto precisando de reposição urgente.</p>
+                        <p className="text-sm font-bold text-center px-4">Estoque saudável!</p>
+                        <p className="text-xs text-center mt-1">Nenhum produto com risco de falta para os próximos 30 dias.</p>
                     </div>
                 ) : (
                     insights.map((item, index) => (
-                        <div key={index} className="p-4 rounded-2xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:shadow-sm transition-all group">
-                            <div className="flex justify-between items-start mb-2">
-                                <h4 className="font-bold text-gray-800 text-sm leading-tight pr-2">{item.product_name}</h4>
-                            </div>
+                        <div key={index} className="px-4 py-3 rounded-2xl border border-gray-100 bg-white hover:bg-gray-50/80 shadow-sm hover:shadow-md transition-all">
+                            <h4 className="font-bold text-gray-800 text-sm leading-tight pr-2 mb-2 line-clamp-1">{item.product_name}</h4>
 
-                            <div className="flex items-center justify-between mt-3">
-                                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold ${getBadgeStyle(item.days_remaining)}`}>
-                                    {getIcon(item.days_remaining)}
-                                    {item.days_remaining} {item.days_remaining === 1 ? 'dia restante' : 'dias restantes'}
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-1.5 text-xs text-gray-600 font-medium bg-gray-50 px-2 py-1 rounded-lg">
+                                    <TrendingDown size={12} className="text-gray-400" />
+                                    Acaba em <span className="font-bold">{Math.floor(item.days_remaining)} dias</span>
                                 </div>
 
                                 <div className="text-right">
-                                    <span className="text-[10px] text-gray-400 font-bold uppercase block mb-0.5">Sugestão</span>
-                                    <span className="text-sm font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">
-                                        + {item.recommended_restock} un
+                                    <span className="text-[10px] text-gray-500 font-bold uppercase block mb-0.5">Sugestão</span>
+                                    <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 block">
+                                        + {item.suggested_qty}
                                     </span>
                                 </div>
                             </div>
+
+                            {item.estimated_lost_profit > 0 && (
+                                <div className="border-t border-gray-100 pt-2 text-[10px] text-gray-500 flex justify-between">
+                                    <span>Risco financeiro:</span>
+                                    <span className="font-bold text-red-500">{item.estimated_lost_profit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                                </div>
+                            )}
                         </div>
                     ))
                 )}
             </div>
+
+            {!loading && insights.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-gray-50 text-center">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        Ação: Abra a aba Bibi
+                    </span>
+                </div>
+            )}
         </div>
     );
 }
