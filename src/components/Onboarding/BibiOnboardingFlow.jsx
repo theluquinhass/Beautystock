@@ -1,62 +1,122 @@
 import React from 'react';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import SpotlightOverlay from './SpotlightOverlay';
+import WelcomeSetupModal from './WelcomeSetupModal';
+import { useNavigate } from 'react-router-dom';
 
 export default function BibiOnboardingFlow() {
-    const { step, isOnboardingActive, nextStep, finishOnboarding } = useOnboarding();
+    const {
+        status,
+        tourStep,
+        profileName,
+        submitSetup,
+        nextTourStep,
+        prevTourStep,
+        finishOnboarding,
+        skipOnboarding
+    } = useOnboarding();
+    const navigate = useNavigate();
 
-    if (!isOnboardingActive || step === 0) return null;
-
-    switch (step) {
-        case 1:
-            return (
-                <SpotlightOverlay
-                    isModal
-                    title="Oi! Sou a Bibi ✨"
-                    text="Sou sua Consultora de Estoque. Vi que seu negócio é novo por aqui. Vamos cadastrar seu primeiro produto?"
-                    onNext={nextStep}
-                />
-            );
-        case 2:
-            return (
-                <SpotlightOverlay
-                    targetSelector="[data-onboarding='add-product']"
-                    title="Seu primeiro produto"
-                    text="Clique aqui para cadastrar o que você vende. Pode ser um perfume, hidratante, maquiagem..."
-                    onNext={() => {
-                        // User should click the button instead, but if they click next we wait for them to act.
-                    }}
-                />
-            );
-        case 3:
-            return (
-                <SpotlightOverlay
-                    targetSelector="[data-onboarding='add-movement']"
-                    title="Ótimo trabalho! 👏"
-                    text="Agora registre uma venda ou uma entrada desse produto no seu estoque clicando aqui."
-                    onNext={() => { }} // User needs to perform action
-                />
-            );
-        case 4:
-            return (
-                <SpotlightOverlay
-                    targetSelector="[data-onboarding='profit-card']"
-                    title="Onde a mágica acontece 💸"
-                    text="Aqui eu acompanharei de perto todo o lucro que você gerar e os riscos de perder dinheiro."
-                    onNext={nextStep}
-                />
-            );
-        case 5:
-            return (
-                <SpotlightOverlay
-                    isModal
-                    isLast
-                    title="Você está pronto!"
-                    text="Siga alimentando o app todos os dias. Quando estiver pronto para crescer rápido, desbloqueie meu modo PRO para Dicas Exclusivas de Compra Pelo WhatsApp!"
-                    onNext={finishOnboarding}
-                />
-            );
-        default:
-            return null;
+    // Do nothing until state is settled
+    if (status === 'idle' || status === 'loading' || status === 'completed') {
+        return null;
     }
+
+    if (status === 'setup') {
+        return <WelcomeSetupModal onSubmit={submitSetup} initialName={profileName} />;
+    }
+
+    if (status === 'tour') {
+        const totalSteps = 5;
+
+        // Force navigation if necessary to make elements visible
+        const goTo = (path) => {
+            if (window.location.pathname !== path) {
+                navigate(path);
+            }
+        };
+
+        const handleNext = (path) => {
+            if (path) goTo(path);
+            nextTourStep();
+        };
+
+        switch (tourStep) {
+            case 1:
+                return (
+                    <SpotlightOverlay
+                        targetSelector="[data-onboarding='nav-products']"
+                        title="Seu catálogo 💄"
+                        text="Aqui você cadastra tudo o que vende (perfumes, cremes...). O BeautyStock calcula seu lucro e avisa quando o estoque acabar."
+                        stepIndex={1}
+                        totalSteps={totalSteps}
+                        onNext={() => handleNext('/')}
+                        onPrev={null}
+                        onSkip={skipOnboarding}
+                    />
+                );
+            case 2:
+                // Make sure we are on dashboard
+                setTimeout(() => goTo('/'), 0);
+                return (
+                    <SpotlightOverlay
+                        targetSelector="[data-onboarding='add-movement']"
+                        title="Registrar Vendas 💰"
+                        text="Este é o botão mágico! É aqui que você registra suas vendas ou entradas de mercadoria de forma rápida."
+                        stepIndex={2}
+                        totalSteps={totalSteps}
+                        onNext={() => handleNext('/')}
+                        onPrev={prevTourStep}
+                        onSkip={skipOnboarding}
+                    />
+                );
+            case 3:
+                return (
+                    <SpotlightOverlay
+                        targetSelector="[data-onboarding='nav-customers']"
+                        title="Carteira de Clientes 👥"
+                        text="Seus clientes organizados por quem está devendo (Fiado). O plano PRO desbloqueia essa funcionalidade completa."
+                        stepIndex={3}
+                        totalSteps={totalSteps}
+                        onNext={() => handleNext('/')}
+                        onPrev={prevTourStep}
+                        onSkip={skipOnboarding}
+                    />
+                );
+            case 4:
+                return (
+                    <SpotlightOverlay
+                        isModal
+                        title="Cobranças pelo WhatsApp 📱"
+                        text="No plano PRO, você pode cobrar clientes pelo WhatsApp com 1 clique! Você escolhe o tom da mensagem (Soft, Direto ou Urgente) e nós enviamos."
+                        stepIndex={4}
+                        totalSteps={totalSteps}
+                        onNext={() => handleNext('/')}
+                        onPrev={prevTourStep}
+                        onSkip={skipOnboarding}
+                    />
+                );
+            case 5:
+                return (
+                    <SpotlightOverlay
+                        targetSelector="[data-onboarding='profit-card']"
+                        title="Pronta para crescer! 🚀"
+                        text={`Tudo pronto, ${profileName || 'amiga'}! Agora observe esse painel crescer todos os dias. Vamos cadastrar seu primeiro produto?`}
+                        stepIndex={5}
+                        totalSteps={totalSteps}
+                        isLast
+                        onNext={() => {
+                            finishOnboarding();
+                            goTo('/produtos'); // Ação de ativação após onboarding
+                        }}
+                        onPrev={prevTourStep}
+                        onSkip={skipOnboarding}
+                    />
+                );
+            default:
+                return null;
+        }
+    }
+
+    return null;
 }

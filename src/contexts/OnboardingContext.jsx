@@ -1,119 +1,122 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { supabase } from '../lib/supabase';
+import { profileService } from '../services/profile.service';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const OnboardingContext = createContext();
 
 export function OnboardingProvider({ children }) {
     const { user } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
 
-    const [step, setStep] = useState(0);
-    const [isOnboardingActive, setIsOnboardingActive] = useState(false);
-    const [isCompleted, setIsCompleted] = useState(true);
+    // 'idle' | 'loading' | 'setup' | 'tour' | 'completed'
+    const [status, setStatus] = useState('idle');
+    const [tourStep, setTourStep] = useState(1);
+    const [profileName, setProfileName] = useState('');
 
-    // Initialize onboarding state
     useEffect(() => {
-        if (!user) return;
+        if (!user) {
+            setStatus('idle');
+            return;
+        }
 
-        const checkOnboardingStatus = async () => {
-            const completed = localStorage.getItem(`beautystock_onboarding_${user.id}`);
-
-            if (completed) {
-                setIsCompleted(true);
-                setIsOnboardingActive(false);
+        const initOnboarding = async () => {
+            const localStatus = localStorage.getItem(`beautystock_onboarding_${user.id}`);
+            if (localStatus === 'true') {
+                setStatus('completed');
                 return;
             }
 
-            const { count: productCount } = await supabase
-                .from('products')
-                .select('*', { count: 'exact', head: true })
-                .eq('user_id', user.id);
+            setStatus('loading');
+            try {
+                const profile = await profileService.getProfile(user.id);
+                setProfileName(profile.first_name || '');
 
-            const { count: movementCount } = await supabase
-                .from('movements')
-                .select('*', { count: 'exact', head: true })
-                .eq('user_id', user.id);
-
-            if (productCount === 0 && movementCount === 0) {
-                setIsCompleted(false);
-                setIsOnboardingActive(true);
-                setStep(1);
-            } else {
-                finishOnboarding();
+                if (profile.onboarding_completed) {
+                    localStorage.setItem(`beautystock_onboarding_${user.id}`, 'true');
+                    setStatus('completed');
+                } else if (!profile.store_niche) {
+                    setStatus('setup');
+                } else {
+                    setTourStep(profile.onboarding_step || 1);
+                    setStatus('tour');
+                }
+            } catch (error) {
+                console.error("Error loading onboarding state:", error);
+                // Fallback to complete if DB drops to avoid blocking user
+                setStatus('completed');
             }
         };
 
-        checkOnboardingStatus();
-    }, [user]);
-
-    // Track state changes to auto-advance
-    useEffect(() => {
-        if (!isOnboardingActive || !user) return;
-
-        let interval;
-
-        const checkProgress = async () => {
-            if (step === 2) {
-                const { count } = await supabase
-                    .from('products')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('user_id', user.id);
-
-                if (count > 0) {
-                    setTimeout(() => setStep(3), 800);
-                }
-            } else if (step === 3) {
-                const { count } = await supabase
-                    .from('movements')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('user_id', user.id);
-
-                if (count > 0) {
-                    setTimeout(() => setStep(4), 800);
-                }
-            }
-        };
-
-        if (step === 2 || step === 3) {
-            interval = setInterval(checkProgress, 2000);
+        if (status === 'idle' || location.pathname === '/') {
+            initOnboarding();
         }
+    }, [user, location.pathname]);
 
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [step, isOnboardingActive, user]);
+    const submitSetup = async ({ name, niche, goal }) => {
+        try {
+            await profileService.updateOnboardingStatus(user.id, {
+                store_niche: niche,
+                store_goal: goal,
+                onboarding_step: 1
+            }, name);
 
-    const nextStep = () => {
-        setStep(prev => prev + 1);
+            setProfileName(name);
+            setTourStep(1);
+            setStatus('tour');
+        } catch (error) {
+            console.error("Failed to submit setup:", error);
+        }
     };
 
-    const prevStep = () => {
-        setStep(prev => Math.max(1, prev - 1));
-    };
+    const nextTourStep = () => setTourStep(prev => prev + 1);
+    const prevTourStep = () => setTourStep(prev => Math.max(1, prev - 1));
 
-    const finishOnboarding = () => {
-        if (user) {
+    const finishOnboarding = async () => {
+        try {
+            await profileService.updateOnboardingStatus(user.id, {
+                onboarding_completed: true,
+                onboarding_step: 5
+            });
             localStorage.setItem(`beautystock_onboarding_${user.id}`, 'true');
+            setStatus('completed');
+        } catch (error) {
+            console.error("Failed to finish onboarding:", error);
+            setStatus('completed');
         }
-        setIsCompleted(true);
-        setIsOnboardingActive(false);
-        setStep(0);
     };
 
-    const skipOnboarding = () => {
-        finishOnboarding();
+    const skipOnboarding = async () => {
+        await finishOnboarding();
+    };
+
+    const resetOnboarding = async () => {
+        try {
+            await profileService.updateOnboardingStatus(user.id, {
+                store_niche: null,
+                store_goal: null,
+                onboarding_completed: false,
+                onboarding_step: 0
+            });
+            localStorage.removeItem(`beautystock_onboarding_${user.id}`);
+            setStatus('setup');
+        } catch (error) {
+            console.error("Failed to reset onboarding", error);
+        }
     };
 
     return (
         <OnboardingContext.Provider value={{
-            step,
-            setStep,
-            isOnboardingActive,
-            isCompleted,
-            nextStep,
-            prevStep,
+            status,
+            tourStep,
+            profileName,
+            submitSetup,
+            nextTourStep,
+            prevTourStep,
             finishOnboarding,
-            skipOnboarding
+            skipOnboarding,
+            resetOnboarding
         }}>
             {children}
         </OnboardingContext.Provider>

@@ -9,6 +9,7 @@ import { useDashboard } from '../hooks/useDashboard';
 import ProfitChart from '../components/ProfitChart';
 import TopDebtorsCard from '../components/Dashboard/TopDebtorsCard';
 import BibiInsights from '../components/Dashboard/BibiInsights';
+import GettingStartedChecklist from '../components/Dashboard/GettingStartedChecklist';
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -21,6 +22,8 @@ export default function Dashboard() {
             <div className="lg:hidden">
                 <Header userName={userName} subtitle="Seu lucro este mês está crescendo! 🚀" />
             </div>
+
+            <GettingStartedChecklist />
 
             {/* Metrics Row */}
             <div className="flex flex-col gap-4 mb-6 lg:grid lg:grid-cols-12 lg:gap-6">

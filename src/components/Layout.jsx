@@ -60,6 +60,10 @@ export default function Layout() {
                             <Link
                                 key={item.path}
                                 to={item.path}
+                                data-onboarding={
+                                    item.path === '/produtos' ? 'nav-products' :
+                                        item.path === '/clientes' ? 'nav-customers' : undefined
+                                }
                                 className={cn(
                                     "flex flex-col items-center gap-1 transition-colors duration-200",
                                     isActive ? "text-primary" : "text-gray-400 hover:text-gray-600"

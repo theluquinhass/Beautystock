@@ -56,6 +56,10 @@ export default function DesktopSidebar() {
                         <Link
                             key={item.path}
                             to={item.path}
+                            data-onboarding={
+                                item.path === '/produtos' ? 'nav-products' :
+                                    item.path === '/clientes' ? 'nav-customers' : undefined
+                            }
                             className={cn(
                                 "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group",
                                 isActive

@@ -1,22 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import BibiTooltip from './BibiTooltip';
-import { useOnboarding } from '../../contexts/OnboardingContext';
 
-export default function SpotlightOverlay({ targetSelector, title, text, padding = 4, isLast = false, onNext, isModal = false }) {
-    const { skipOnboarding } = useOnboarding();
+export default function SpotlightOverlay({
+    targetSelector,
+    title,
+    text,
+    padding = 6,
+    stepIndex,
+    totalSteps,
+    isLast = false,
+    onNext,
+    onPrev,
+    onSkip,
+    isModal = false
+}) {
     const [rect, setRect] = useState(null);
     const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
 
     useEffect(() => {
-        if (isModal) return; // Modals don't need spotlight rect calculations
+        if (isModal) return;
 
         const updateRect = () => {
             const el = document.querySelector(targetSelector);
             if (el) {
                 const r = el.getBoundingClientRect();
 
-                // If element is hidden (e.g. display: none or completely covered/zero-sized)
                 if (r.width === 0 || r.height === 0) {
                     setRect(null);
                     return;
@@ -29,16 +38,22 @@ export default function SpotlightOverlay({ targetSelector, title, text, padding 
                     height: r.height + padding * 2,
                 });
 
-                // Scroll into view if not visible
-                if (r.top < 0 || r.bottom > window.innerHeight) {
+                // Scroll into view if not fully visible
+                const isVisible = (
+                    r.top >= 0 &&
+                    r.left >= 0 &&
+                    r.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+                    r.right <= (window.innerWidth || document.documentElement.clientWidth)
+                );
+
+                if (!isVisible) {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             } else {
-                setRect(null); // Element not strictly found yet
+                setRect(null);
             }
         };
 
-        // Try to find the element a bit after render, useful for dynamic content
         const timeout = setTimeout(updateRect, 100);
         window.addEventListener('resize', updateRect);
         window.addEventListener('scroll', updateRect, { passive: true });
@@ -53,34 +68,42 @@ export default function SpotlightOverlay({ targetSelector, title, text, padding 
     useEffect(() => {
         if (!rect) return;
 
-        // Calculate tooltip position to not cover the spotlight
-        const padding = 16;
+        const tipMargin = 16;
         const isMobile = window.innerWidth < 640;
-        const tooltipWidth = isMobile ? 320 : 384; // w-80 or w-96
+        const tooltipWidth = isMobile ? 320 : 384;
 
-        let top = rect.top + rect.height + padding;
+        // Tooltip Default Position (Below element)
+        let top = rect.top + rect.height + tipMargin;
         let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
 
-        // Adjust for viewport edges
-        if (top + 180 > window.innerHeight) { // If it goes below screen, put it above element
-            top = rect.top - 180 - padding;
+        // Vertical adjustment if it spills off bottom
+        if (top + 200 > window.innerHeight) {
+            // put above
+            top = rect.top - 200 - tipMargin;
         }
-        if (left < padding) left = padding;
-        if (left + tooltipWidth > window.innerWidth - padding) left = window.innerWidth - tooltipWidth - padding;
+
+        // Bounds checking horizontally
+        if (left < tipMargin) left = tipMargin;
+        if (left + tooltipWidth > window.innerWidth - tipMargin) {
+            left = window.innerWidth - tooltipWidth - tipMargin;
+        }
 
         setTooltipPos({ top, left });
     }, [rect]);
 
     if (isModal) {
         return createPortal(
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-[2px] pointer-events-auto" />
-                <div className="relative z-10 pointer-events-auto">
+            <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 pointer-events-auto">
+                <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-[2px]" />
+                <div className="relative z-10">
                     <BibiTooltip
                         title={title}
                         text={text}
+                        stepIndex={stepIndex}
+                        totalSteps={totalSteps}
                         onNext={onNext}
-                        onSkip={skipOnboarding}
+                        onPrev={onPrev}
+                        onSkip={onSkip}
                         isLast={isLast}
                     />
                 </div>
@@ -89,16 +112,17 @@ export default function SpotlightOverlay({ targetSelector, title, text, padding 
         );
     }
 
-    // If we're not a modal and the target element isn't found/visible,
-    // show a floating non-blocking tooltip at the bottom right.
     if (!rect) {
         return createPortal(
-            <div className="fixed bottom-6 right-6 z-[100] pointer-events-auto">
+            <div className="fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[120] pointer-events-auto">
                 <BibiTooltip
                     title={title}
                     text={text}
+                    stepIndex={stepIndex}
+                    totalSteps={totalSteps}
                     onNext={onNext}
-                    onSkip={skipOnboarding}
+                    onPrev={onPrev}
+                    onSkip={onSkip}
                     isLast={isLast}
                 />
             </div>,
@@ -107,10 +131,10 @@ export default function SpotlightOverlay({ targetSelector, title, text, padding 
     }
 
     return createPortal(
-        <div className="fixed inset-0 z-[100] pointer-events-none">
-            {/* The dark overlay with a "hole" cut out using border masks */}
+        <div className="fixed inset-0 z-[120] pointer-events-none">
+            {/* Cutout Mask */}
             <div
-                className="absolute bg-gray-900/60 backdrop-blur-[2px] transition-all duration-300 ease-in-out pointer-events-auto"
+                className="absolute inset-0 bg-gray-900/60 backdrop-blur-[2px] transition-all duration-300 ease-in-out pointer-events-auto"
                 style={{
                     clipPath: `polygon(
                         0% 0%, 0% 100%, ${rect.left}px 100%, 
@@ -122,15 +146,14 @@ export default function SpotlightOverlay({ targetSelector, title, text, padding 
                     )`
                 }}
                 onClick={(e) => {
-                    // Prevent clicks on the dark area
                     e.stopPropagation();
                     e.preventDefault();
                 }}
             />
 
-            {/* The outline ring around the element */}
+            {/* Target Highlight Ring */}
             <div
-                className="absolute border-2 border-pink-500 rounded-xl pointer-events-none transition-all duration-300 ease-in-out pulse-glow"
+                className="absolute border-2 border-pink-500 rounded-2xl transition-all duration-300 ease-in-out pulse-glow pointer-events-none"
                 style={{
                     top: rect.top,
                     left: rect.left,
@@ -140,16 +163,19 @@ export default function SpotlightOverlay({ targetSelector, title, text, padding 
                 }}
             />
 
-            {/* The Tooltip card */}
+            {/* Tooltip Wrapper */}
             <div
-                className="absolute pointer-events-auto transition-all duration-300 ease-in-out"
+                className="absolute transition-all duration-300 ease-in-out pointer-events-none z-10"
                 style={{ top: tooltipPos.top, left: tooltipPos.left }}
             >
                 <BibiTooltip
                     title={title}
                     text={text}
+                    stepIndex={stepIndex}
+                    totalSteps={totalSteps}
                     onNext={onNext}
-                    onSkip={skipOnboarding}
+                    onPrev={onPrev}
+                    onSkip={onSkip}
                     isLast={isLast}
                 />
             </div>
