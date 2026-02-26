@@ -7,6 +7,7 @@ import DesktopSidebar from './Desktop/DesktopSidebar';
 import DesktopTopbar from './Desktop/DesktopTopbar';
 import BibiButton from './Bibi/BibiButton';
 import BibiOnboardingFlow from './Onboarding/BibiOnboardingFlow';
+import InstallPWA from './InstallPWA';
 
 export default function Layout() {
     const location = useLocation();
@@ -47,6 +48,7 @@ export default function Layout() {
                 {/* Main Content Area (Mobile vs Desktop constraints) */}
                 {/* On mobile: standard p-4 pb-20 for bottom nav. On desktop: max-w-7xl, larger padding, no bottom padding constraint */}
                 <main className="p-4 pb-24 lg:p-8 lg:pb-8 w-full max-w-7xl mx-auto flex-1 h-full">
+                    <InstallPWA />
                     <Outlet />
                 </main>
 
