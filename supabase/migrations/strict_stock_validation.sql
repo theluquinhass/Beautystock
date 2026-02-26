@@ -1,3 +1,8 @@
+-- 0. FIX EXISTING NEGATIVE STOCK (so the constraint doesn't throw an error)
+UPDATE public.variations 
+SET stock_quantity = 0 
+WHERE stock_quantity < 0;
+
 -- 1. ADD CONSTRAINT TO GUARANTEE STOCK >= 0 AT ALL TIMES
 ALTER TABLE public.variations 
 ADD CONSTRAINT check_stock_positive CHECK (stock_quantity >= 0);

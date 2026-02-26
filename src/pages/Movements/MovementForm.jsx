@@ -224,29 +224,40 @@ export default function MovementForm() {
                         return;
                     }
 
-                    if (error.message.includes('INSUFFICIENT_STOCK:')) {
+                    const errStr = typeof error === 'object' ? JSON.stringify(error) : String(error);
+                    const errMsg = error.message || '';
+                    const errDetails = error.details || '';
+
+                    if (errStr.includes('INSUFFICIENT_STOCK') || errMsg.includes('INSUFFICIENT_STOCK') || errDetails.includes('INSUFFICIENT_STOCK')) {
                         try {
-                            // Extract the JSON string from the error message
-                            const errorJsonStr = error.message.split('INSUFFICIENT_STOCK:')[1];
-                            const insufficientItems = JSON.parse(errorJsonStr);
+                            // Extract the JSON string from the error message using a regex finding the array brackets
+                            const targetStr = errMsg.includes('INSUFFICIENT_STOCK') ? errMsg : (errDetails.includes('INSUFFICIENT_STOCK') ? errDetails : errStr);
+                            const startIdx = targetStr.indexOf('[');
+                            const endIdx = targetStr.lastIndexOf(']');
 
-                            // Format a beautiful error message
-                            insufficientItems.forEach(item => {
-                                toast.error(
-                                    `Estoque insuficiente para: ${item.name}. ` +
-                                    `Pedido: ${item.requested}, Disponível: ${item.available}`,
-                                    { duration: 6000 }
-                                );
-                            });
+                            if (startIdx !== -1 && endIdx !== -1) {
+                                const errorJsonStr = targetStr.substring(startIdx, endIdx + 1);
+                                const insufficientItems = JSON.parse(errorJsonStr);
 
-                            return; // Stop the flow, allow the user to fix the cart
+                                // Format a beautiful error message
+                                insufficientItems.forEach(item => {
+                                    toast.error(
+                                        `Estoque insuficiente para: ${item.name}. ` +
+                                        `Pedido: ${item.requested}, Disponível: ${item.available}`,
+                                        { duration: 6000 }
+                                    );
+                                });
+                                return;
+                            }
                         } catch (e) {
                             console.error("Failed to parse stock error JSON", e);
-                            throw new Error("Estoque insuficiente em um ou mais itens. Ajuste as quantidades.");
                         }
+
+                        toast.error("Estoque insuficiente em um ou mais itens. Ajuste as quantidades da venda.");
+                        return; // Stop the flow
                     }
 
-                    if (error.message.includes('check_stock_positive')) {
+                    if (errStr.includes('check_stock_positive')) {
                         toast.error('Estoque não pode ficar negativo. Revise as quantidades.');
                         return;
                     }
