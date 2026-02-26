@@ -222,9 +222,36 @@ export default function MovementForm() {
                     if (error.message.includes('function process_sale_transaction does not exist')) {
                         toast.error('Por favor, execute o script SQL "multi_sales_rpc.sql" no Supabase primeiro!');
                         return;
-                    } else {
-                        throw error;
                     }
+
+                    if (error.message.includes('INSUFFICIENT_STOCK:')) {
+                        try {
+                            // Extract the JSON string from the error message
+                            const errorJsonStr = error.message.split('INSUFFICIENT_STOCK:')[1];
+                            const insufficientItems = JSON.parse(errorJsonStr);
+
+                            // Format a beautiful error message
+                            insufficientItems.forEach(item => {
+                                toast.error(
+                                    `Estoque insuficiente para: ${item.name}. ` +
+                                    `Pedido: ${item.requested}, Disponível: ${item.available}`,
+                                    { duration: 6000 }
+                                );
+                            });
+
+                            return; // Stop the flow, allow the user to fix the cart
+                        } catch (e) {
+                            console.error("Failed to parse stock error JSON", e);
+                            throw new Error("Estoque insuficiente em um ou mais itens. Ajuste as quantidades.");
+                        }
+                    }
+
+                    if (error.message.includes('check_stock_positive')) {
+                        toast.error('Estoque não pode ficar negativo. Revise as quantidades.');
+                        return;
+                    }
+
+                    throw error;
                 }
 
                 toast.success('Venda concluída com sucesso!');
