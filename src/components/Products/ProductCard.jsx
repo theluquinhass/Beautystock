@@ -1,18 +1,29 @@
 import { Link } from 'react-router-dom';
 import { Package, Edit, Trash, AlertTriangle, Box } from 'lucide-react';
 import { Card } from '../ui/card';
+import { getPublicImageUrl } from '../../lib/productImages';
 
 export default function ProductCard({ product, onDelete }) {
     const totalStock = product.variations?.reduce((acc, v) => acc + (v.stock_quantity || 0), 0) || 0;
     const lowStock = totalStock <= (product.min_stock || 0);
+    const imageUrl = getPublicImageUrl(product.image_path, product.name);
 
     return (
         <Card className="p-4 flex items-center justify-between shadow-soft hover:shadow-md transition-shadow">
             <div className="flex items-center gap-4">
-                {/* Icon Placeholder */}
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${lowStock ? 'bg-red-100 text-red-500' : 'bg-pink-100 text-pink-500'}`}>
-                    {lowStock ? <AlertTriangle size={24} /> : <Box size={24} />}
-                </div>
+                {/* Thumbnail / Icon Placeholder */}
+                {product.image_path ? (
+                    <img
+                        src={imageUrl}
+                        alt={product.name}
+                        className="w-12 h-12 rounded-xl object-cover bg-gray-50 border border-gray-100"
+                        loading="lazy"
+                    />
+                ) : (
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${lowStock ? 'bg-red-100 text-red-500' : 'bg-pink-100 text-pink-500'}`}>
+                        {lowStock ? <AlertTriangle size={24} /> : <Box size={24} />}
+                    </div>
+                )}
 
                 <div>
                     <h3 className="font-semibold text-gray-800 leading-tight">{product.name}</h3>
@@ -23,6 +34,14 @@ export default function ProductCard({ product, onDelete }) {
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${lowStock ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
                             {totalStock} un
                         </span>
+                        {product.categories && (
+                            <span
+                                className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider text-white"
+                                style={{ backgroundColor: product.categories.color || '#ec4899' }}
+                            >
+                                {product.categories.name}
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>

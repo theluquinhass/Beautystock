@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
+import { Camera, X } from 'lucide-react';
+import { uploadCustomerPhoto, getPublicCustomerPhotoUrl } from '../../lib/customerPhotos';
 
 export default function CustomerForm({ initialData = {} }) {
     const navigate = useNavigate();
@@ -12,7 +14,30 @@ export default function CustomerForm({ initialData = {} }) {
         notes: initialData.notes || ''
     });
 
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState(initialData.photo_path ? getPublicCustomerPhotoUrl(initialData.photo_path) : null);
+    const [currentPhotoPath, setCurrentPhotoPath] = useState(initialData.photo_path || null);
+
     const isEditing = !!initialData.id;
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            toast.error('A imagem deve ter no máximo 2MB');
+            return;
+        }
+
+        setImageFile(file);
+        setImagePreview(URL.createObjectURL(file));
+    };
+
+    const handleRemoveImage = () => {
+        setImageFile(null);
+        setImagePreview(null);
+        setCurrentPhotoPath(null);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -22,18 +47,46 @@ export default function CustomerForm({ initialData = {} }) {
             const { data: { user } } = await supabase.auth.getUser();
 
             if (isEditing) {
+                let customerId = initialData.id;
+
                 const { error } = await supabase
                     .from('customers')
                     .update(formData)
-                    .eq('id', initialData.id);
+                    .eq('id', customerId);
                 if (error) throw error;
+
+                if (imageFile) {
+                    try {
+                        const uploadedPath = await uploadCustomerPhoto(imageFile, user.id, customerId);
+                        await supabase.from('customers').update({ photo_path: uploadedPath }).eq('id', customerId);
+                    } catch (imgErr) {
+                        toast.error('Erro ao enviar foto.');
+                    }
+                } else if (currentPhotoPath === null) {
+                    await supabase.from('customers').update({ photo_path: null }).eq('id', customerId);
+                }
+
                 toast.success('Cliente atualizado!');
-                navigate(`/clientes/${initialData.id}`);
+                navigate(`/clientes/${customerId}`);
             } else {
-                const { error } = await supabase
+                const { data: newCustomer, error } = await supabase
                     .from('customers')
-                    .insert({ ...formData, user_id: user.id });
+                    .insert({ ...formData, user_id: user.id })
+                    .select()
+                    .single();
                 if (error) throw error;
+
+                let customerId = newCustomer.id;
+
+                if (imageFile) {
+                    try {
+                        const uploadedPath = await uploadCustomerPhoto(imageFile, user.id, customerId);
+                        await supabase.from('customers').update({ photo_path: uploadedPath }).eq('id', customerId);
+                    } catch (imgErr) {
+                        toast.error('Erro ao enviar foto.');
+                    }
+                }
+
                 toast.success('Cliente cadastrado!');
                 navigate('/clientes');
             }
@@ -47,6 +100,41 @@ export default function CustomerForm({ initialData = {} }) {
 
     return (
         <form onSubmit={handleSubmit} className="max-w-3xl mx-auto flex flex-col gap-6">
+
+            {/* Avatar Section */}
+            <div className="flex flex-col items-center justify-center bg-white p-6 rounded-2xl shadow-soft border border-gray-100">
+                <div className="relative group">
+                    {imagePreview ? (
+                        <>
+                            <img
+                                src={imagePreview}
+                                alt="Avatar do Cliente"
+                                className="w-24 h-24 rounded-full object-cover shadow-md border-2 border-white ring-2 ring-pink-100"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleRemoveImage}
+                                className="absolute -top-1 -right-1 bg-white text-red-500 rounded-full p-1 shadow-md border border-gray-100 hover:scale-110 hover:bg-red-50 transition-all z-10"
+                            >
+                                <X size={14} strokeWidth={3} />
+                            </button>
+                        </>
+                    ) : (
+                        <label className="w-24 h-24 flex flex-col items-center justify-center bg-pink-50 text-pink-500 hover:bg-pink-100 hover:text-pink-600 rounded-full cursor-pointer transition-colors shadow-inner border-2 border-dashed border-pink-200 hover:border-pink-300">
+                            <Camera size={28} className="mb-1" />
+                            <span className="text-[9px] font-bold uppercase tracking-wider">Foto</span>
+                            <input
+                                type="file"
+                                accept="image/jpeg, image/png, image/webp"
+                                className="hidden"
+                                onChange={handleImageChange}
+                            />
+                        </label>
+                    )}
+                </div>
+                <p className="text-xs text-gray-400 mt-3 font-medium">JPG, PNG ou WEBP até 2MB</p>
+            </div>
+
             <div className="bg-white p-6 rounded-2xl shadow-soft border border-gray-100">
                 <div className="space-y-4">
                     <div className="space-y-1.5">

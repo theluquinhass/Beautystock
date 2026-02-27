@@ -1,3 +1,65 @@
+import { supabase } from './supabase';
+
+const BUCKET_NAME = 'product-images';
+
+/**
+ * Gets the public URL for a product image from Supabase Storage.
+ * Drops back to Unsplash generated images if no path provided.
+ * @param {string} imagePath - The path in the storage bucket (e.g. "user_id/product_id.jpg")
+ * @param {string} fallbackName - The product name for fallback Unsplash image
+ * @returns {string} - The exact URL to show
+ */
+export const getPublicImageUrl = (imagePath, fallbackName = '') => {
+    if (!imagePath) return getProductImage(fallbackName);
+
+    if (imagePath.startsWith('http')) return imagePath;
+
+    const { data } = supabase.storage
+        .from(BUCKET_NAME)
+        .getPublicUrl(imagePath);
+
+    return data.publicUrl;
+};
+
+/**
+ * Uploads an image file to Supabase Storage.
+ * @param {File} file - The image file to upload
+ * @param {string} userId - The user ID for the folder
+ * @param {string} productId - Optional: The product ID (if not provided, creates a random name)
+ * @returns {Promise<string>} - The uploaded image path
+ */
+export const uploadProductImage = async (file, userId, productId = null) => {
+    if (!file) throw new Error('Nenhum arquivo providenciado.');
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = productId ? `${productId}.${fileExt}` : `${crypto.randomUUID()}.${fileExt}`;
+    const filePath = `${userId}/${fileName}`;
+
+    const { data, error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: true
+        });
+
+    if (error) throw error;
+
+    return data.path;
+};
+
+/**
+ * Deletes an image from Supabase Storage
+ * @param {string} imagePath - The path to delete
+ */
+export const deleteProductImage = async (imagePath) => {
+    if (!imagePath) return;
+    if (imagePath.startsWith('http')) return;
+
+    await supabase.storage
+        .from(BUCKET_NAME)
+        .remove([imagePath]);
+};
+
 /**
  * Returns a high-quality Unsplash image URL based on product name keywords.
  * If no keywords match, falls back to a deterministic premium image based on the name length.

@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Package, ArrowLeftRight, Users, Crown, User } from 'lucide-react';
+import { Home, Package, ArrowLeftRight, Users, Crown, User, Store } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { usePlan } from '../hooks/usePlan';
@@ -17,6 +17,7 @@ export default function Layout() {
     const navItems = [
         { icon: Home, label: 'Início', path: '/' },
         { icon: Package, label: 'Produtos', path: '/produtos' },
+        { icon: Store, label: 'Catálogo', path: '/catalogo' },
         { icon: Users, label: 'Clientes', path: '/clientes' },
         { icon: ArrowLeftRight, label: 'Movimentos', path: '/movimentacoes' },
         { icon: User, label: 'Conta', path: '/conta' },

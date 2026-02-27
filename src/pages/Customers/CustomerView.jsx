@@ -6,6 +6,7 @@ import { Card } from '../../components/ui/card';
 import CustomerHistory from '../../components/Customers/CustomerHistory';
 import PaymentModal from '../../components/Customers/PaymentModal';
 import ChargeModal from '../../components/Customers/ChargeModal';
+import { getPublicCustomerPhotoUrl } from '../../lib/customerPhotos';
 
 export default function CustomerView() {
     const { id } = useParams();
@@ -76,11 +77,25 @@ export default function CustomerView() {
     return (
         <div className="pb-24">
             <div className="flex items-center gap-4 mb-6">
-                <button onClick={() => navigate('/clientes')} className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
+                <button onClick={() => navigate('/clientes')} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors">
                     <ArrowLeft size={24} />
                 </button>
-                <h1 className="text-xl font-bold text-gray-800 flex-1">{customer.name}</h1>
-                <button onClick={() => navigate(`/clientes/${id}/editar`)} className="p-2 text-gray-500 hover:text-primary">
+                <div className="flex items-center gap-3 flex-1">
+                    {customer.photo_path ? (
+                        <img
+                            src={getPublicCustomerPhotoUrl(customer.photo_path)}
+                            alt={customer.name}
+                            className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-gray-100"
+                            loading="lazy"
+                        />
+                    ) : (
+                        <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center text-primary font-bold shadow-sm">
+                            {customer.name.charAt(0).toUpperCase()}
+                        </div>
+                    )}
+                    <h1 className="text-xl font-bold text-gray-800 leading-tight">{customer.name}</h1>
+                </div>
+                <button onClick={() => navigate(`/clientes/${id}/editar`)} className="p-2 text-gray-500 hover:text-primary transition-colors bg-white rounded-full shadow-sm border border-gray-100">
                     <Edit size={20} />
                 </button>
             </div>

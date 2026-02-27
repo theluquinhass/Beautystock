@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Package, ArrowLeftRight, Users, User, PlusCircle, Crown, LogOut } from 'lucide-react';
+import { Home, Package, ArrowLeftRight, Users, User, PlusCircle, Crown, LogOut, Store } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { usePlan } from '../../hooks/usePlan';
 import { useAuth } from '../../contexts/AuthContext';
@@ -13,6 +13,7 @@ export default function DesktopSidebar() {
     const navItems = [
         { icon: Home, label: 'Dashboard', path: '/' },
         { icon: Package, label: 'Produtos', path: '/produtos' },
+        { icon: Store, label: 'Catálogo', path: '/catalogo' },
         { icon: Users, label: 'Clientes', path: '/clientes' },
         { icon: ArrowLeftRight, label: 'Movimentações', path: '/movimentacoes' },
         { icon: User, label: 'Minha Conta', path: '/conta' },

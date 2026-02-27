@@ -3,6 +3,7 @@ import { Card } from '../ui/card';
 import { Phone, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ChargeModal from './ChargeModal';
+import { getPublicCustomerPhotoUrl } from '../../lib/customerPhotos';
 
 export default function CustomerCard({ customer }) {
     const { id, name, phone, debt = 0 } = customer;
@@ -23,9 +24,18 @@ export default function CustomerCard({ customer }) {
             <div onClick={() => navigate(`/clientes/${id}`)} className="block">
                 <Card className="p-4 flex items-center justify-between hover:bg-pink-50/50 transition-colors cursor-pointer mb-3">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center text-primary font-bold text-lg">
-                            {name.charAt(0).toUpperCase()}
-                        </div>
+                        {customer.photo_path ? (
+                            <img
+                                src={getPublicCustomerPhotoUrl(customer.photo_path)}
+                                alt={name}
+                                className="w-12 h-12 rounded-full object-cover border border-pink-100/50 shadow-sm"
+                                loading="lazy"
+                            />
+                        ) : (
+                            <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center text-primary font-bold text-lg">
+                                {name.charAt(0).toUpperCase()}
+                            </div>
+                        )}
                         <div>
                             <h3 className="font-semibold text-gray-800">{name}</h3>
                             {phone && <p className="text-xs text-gray-500 flex items-center gap-1"><Phone size={10} /> {phone}</p>}

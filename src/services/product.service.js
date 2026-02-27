@@ -7,7 +7,7 @@ export const productService = {
 
         const { data, error } = await supabase
             .from('products')
-            .select(`*, variations(id, name, stock_quantity)`) // Optimized select
+            .select(`*, variations(id, name, stock_quantity), categories(id, name, color)`) // Optimized select
             .eq('user_id', user.id)
             .order('name');
 
@@ -18,7 +18,7 @@ export const productService = {
     async getById(id) {
         const { data, error } = await supabase
             .from('products')
-            .select(`*, variations(*)`)
+            .select(`*, variations(*), categories(id, name, color)`)
             .eq('id', id)
             .single();
 

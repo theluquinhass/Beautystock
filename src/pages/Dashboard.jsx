@@ -10,6 +10,7 @@ import ProfitChart from '../components/ProfitChart';
 import TopDebtorsCard from '../components/Dashboard/TopDebtorsCard';
 import BibiInsights from '../components/Dashboard/BibiInsights';
 import GettingStartedChecklist from '../components/Dashboard/GettingStartedChecklist';
+import DashboardCategories from '../components/Dashboard/DashboardCategories';
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -93,10 +94,11 @@ export default function Dashboard() {
             <div className="flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:gap-6">
                 <div className="lg:col-span-8 flex flex-col gap-6">
                     <RecentMovements movements={recentMovements} />
+                    <BestSellers products={bestSellers} />
                 </div>
                 <div className="lg:col-span-4 flex flex-col gap-6">
                     <BibiInsights />
-                    <BestSellers products={bestSellers} />
+                    <DashboardCategories />
                 </div>
             </div>
 

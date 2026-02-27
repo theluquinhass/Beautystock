@@ -1,6 +1,6 @@
 import { TrendingUp, Flame } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { getProductImage } from '../../lib/productImages';
+import { getPublicImageUrl } from '../../lib/productImages';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -50,7 +50,7 @@ export default function BestSellers({ products = [] }) {
                             <div className="absolute inset-0 bg-gradient-to-br from-pink-50 to-pink-100/50 animate-pulse" />
 
                             <img
-                                src={getProductImage(product.name)}
+                                src={getPublicImageUrl(product.image_path, product.name)}
                                 alt={product.name}
                                 className="absolute inset-0 w-full h-full object-cover rounded-2xl opacity-0 transition-opacity duration-500 z-10"
                                 onLoad={(e) => e.target.classList.remove('opacity-0')}

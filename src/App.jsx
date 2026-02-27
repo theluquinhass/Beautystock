@@ -21,6 +21,9 @@ import BibiOnboardingFlow from './components/Onboarding/BibiOnboardingFlow';
 // Direct import to avoid potential lazy loading issues
 import MovementForm from './pages/Movements/MovementForm';
 const Account = lazy(() => import('./pages/Account'));
+const Categories = lazy(() => import('./pages/Categories'));
+const CatalogSettings = lazy(() => import('./pages/CatalogSettings'));
+const PublicCatalog = lazy(() => import('./pages/PublicCatalog'));
 const CustomersList = lazy(() => import('./pages/Customers/CustomersList'));
 const CustomerFormPage = lazy(() => import('./pages/Customers/CustomerFormPage'));
 const CustomerView = lazy(() => import('./pages/Customers/CustomerView'));
@@ -42,6 +45,7 @@ export default function App() {
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/c/:slug" element={<PublicCatalog />} />
 
                 <Route element={<PrivateRoute />}>
                   <Route element={<Layout />}>
@@ -51,6 +55,8 @@ export default function App() {
                     <Route path="/produtos/:id" element={<ProductForm />} />
                     <Route path="/movimentacoes" element={<Movements />} />
                     <Route path="/movimentacoes/nova" element={<MovementForm />} />
+                    <Route path="/categorias" element={<Categories />} />
+                    <Route path="/catalogo" element={<CatalogSettings />} />
                     <Route path="/conta" element={<Account />} />
 
                     {/* PRO Protected Routes */}

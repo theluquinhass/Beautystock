@@ -12,6 +12,7 @@ export default function ProductList() {
     const { isPro } = usePlan();
     const { products, loading, deleteProduct, fetchProducts } = useProducts();
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('Todos');
     const [showImporter, setShowImporter] = useState(false);
 
     const handleDelete = async (id) => {
@@ -23,6 +24,9 @@ export default function ProductList() {
         fetchProducts(); // Refresh list
     };
 
+    // Extract unique categories for the chips
+    const uniqueCategories = ['Todos', ...new Set(products.filter(p => p.categories?.name).map(p => p.categories.name))].sort();
+
     const handleImportClick = () => {
         if (isPro) {
             setShowImporter(true);
@@ -33,9 +37,11 @@ export default function ProductList() {
         }
     };
 
-    const filteredProducts = products.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredProducts = products.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = selectedCategory === 'Todos' || p.categories?.name === selectedCategory;
+        return matchesSearch && matchesCategory;
+    });
 
     if (loading) return <div className="h-screen flex items-center justify-center text-pink-500"><Loader2 className="animate-spin" size={32} /></div>;
 
@@ -53,7 +59,26 @@ export default function ProductList() {
             </div>
 
             {/* Sticky Search Bar & Actions */}
-            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur py-2 mb-4 shadow-soft -mx-4 px-4 flex flex-col gap-2">
+            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur py-2 mb-4 shadow-soft -mx-4 px-4 flex flex-col gap-3">
+
+                {/* Category Chips Filter */}
+                {uniqueCategories.length > 1 && (
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4">
+                        {uniqueCategories.map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setSelectedCategory(cat)}
+                                className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold transition-all border shadow-sm ${selectedCategory === cat
+                                        ? 'bg-pink-50 text-pink-600 border-pink-200 shadow-pink-100/50'
+                                        : 'bg-white text-gray-500 border-gray-100 hover:border-gray-200'
+                                    }`}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input
