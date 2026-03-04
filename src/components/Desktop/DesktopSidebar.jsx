@@ -3,6 +3,7 @@ import { Home, Package, ArrowLeftRight, Users, User, PlusCircle, Crown, LogOut, 
 import { cn } from '../../lib/utils';
 import { usePlan } from '../../hooks/usePlan';
 import { useAuth } from '../../contexts/AuthContext';
+import NotificationBell from '../Notifications/NotificationBell';
 
 export default function DesktopSidebar() {
     const location = useLocation();
@@ -27,13 +28,14 @@ export default function DesktopSidebar() {
     return (
         <aside className="hidden lg:flex flex-col w-64 h-screen bg-white border-r border-gray-100 sticky top-0 flex-shrink-0">
             {/* Logo Area */}
-            <div className="h-20 flex items-center px-6 border-b border-gray-50">
+            <div className="h-20 flex items-center justify-between px-6 border-b border-gray-50">
                 <Link to="/" className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-sm">
                         B
                     </div>
                     <span className="text-xl font-black text-gray-800 tracking-tight">Beauty<span className="text-pink-500">Stock</span></span>
                 </Link>
+                <NotificationBell align="left" />
             </div>
 
             {/* Main Action Button */}

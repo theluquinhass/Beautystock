@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 export default function BibiTabs({ activeTab, setActiveTab, isPro, isDesktop = false }) {
     const handleTabChange = (tab) => {
-        if (!isPro && tab !== 'resumo') {
+        if (!isPro && tab !== 'resumo' && tab !== 'restock') {
             toast('Bibi completa é exclusiva do plano PRO 💖', {
                 icon: '✨',
                 style: {
@@ -21,7 +21,7 @@ export default function BibiTabs({ activeTab, setActiveTab, isPro, isDesktop = f
 
     const tabs = [
         { id: 'resumo', label: 'Resumo', icon: LayoutDashboard },
-        { id: 'restock', label: 'Repor', icon: TrendingDown, pro: true },
+        { id: 'restock', label: 'Repor', icon: TrendingDown, pro: false },
         { id: 'top_products', label: 'Campeões', icon: Trophy, pro: true },
         { id: 'dead_stock', label: 'Parados', icon: PackageSearch, pro: true },
     ];

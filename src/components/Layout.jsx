@@ -15,7 +15,7 @@ export default function Layout() {
     const navigate = useNavigate();
 
     const navItems = [
-        { icon: Home, label: 'Início', path: '/' },
+        { icon: Home, label: 'Início', path: '/dashboard' },
         { icon: Package, label: 'Produtos', path: '/produtos' },
         { icon: Store, label: 'Catálogo', path: '/catalogo' },
         { icon: Users, label: 'Clientes', path: '/clientes' },

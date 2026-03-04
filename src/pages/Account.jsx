@@ -33,7 +33,7 @@ export default function Account() {
             setLoading(true);
             const { data, error } = await supabase
                 .from('profiles')
-                .select('first_name, last_name')
+                .select('first_name, last_name, expires_at')
                 .eq('id', user.id)
                 .single();
 
@@ -45,6 +45,14 @@ export default function Account() {
                     first_name: data.first_name || '',
                     last_name: data.last_name || ''
                 }));
+
+                // Add expires_at to profile state temporarily if it exists
+                if (data.expires_at) {
+                    setFormData(prev => ({
+                        ...prev,
+                        expires_at: data.expires_at
+                    }));
+                }
             }
         } catch (error) {
             console.error('Error fetching profile:', error);
@@ -188,8 +196,80 @@ export default function Account() {
                 </div>
 
                 {isPro ? (
-                    <div className="p-4 bg-pink-50 rounded-xl border border-pink-100 text-pink-800 text-sm">
-                        <p>Você tem acesso a todos os recursos premium do BeautyStock! Aproveite.</p>
+                    <div className="flex flex-col gap-3">
+                        {(() => {
+                            if (!formData.expires_at) {
+                                return (
+                                    <div className="p-4 bg-pink-50 rounded-xl border border-pink-100 text-pink-800 text-sm">
+                                        <p>Você tem acesso a todos os recursos premium do BeautyStock! Aproveite.</p>
+                                    </div>
+                                );
+                            }
+
+                            const expiresDate = new Date(formData.expires_at);
+                            const now = new Date();
+                            const diffTime = expiresDate.getTime() - now.getTime();
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                            if (diffDays <= 2 && diffDays >= 0) {
+                                return (
+                                    <div className="p-4 bg-rose-50 rounded-xl border-2 border-rose-200 shadow-sm flex flex-col gap-3">
+                                        <div className="flex items-start gap-3">
+                                            <div className="p-2 bg-rose-100 text-rose-600 rounded-lg shrink-0 mt-0.5">
+                                                <Crown size={20} className="fill-rose-500" />
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <h3 className="font-bold text-rose-800 text-sm">Atenção ao seu Plano PRO</h3>
+                                                    <span className="bg-rose-600 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">
+                                                        Vence em {diffDays === 0 ? 'algumas horas' : `${diffDays} dia${diffDays === 1 ? '' : 's'}`}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-rose-700 font-medium">
+                                                    Renove agora para continuar com recursos PRO sem interrupções.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    const toastId = toast.loading('Gerando pagamento...');
+                                                    const { data, error } = await supabase.functions.invoke('create-pro-renewal-preference', {
+                                                        body: { userId: user.id, email: user.email }
+                                                    });
+
+                                                    if (error) throw error;
+
+                                                    toast.dismiss(toastId);
+                                                    if (data?.init_point) {
+                                                        window.location.href = data.init_point;
+                                                    }
+                                                } catch (err) {
+                                                    console.error(err);
+                                                    toast.error('Erro ao gerar renovação');
+                                                }
+                                            }}
+                                            className="w-full bg-rose-600 text-white text-sm font-bold py-3 rounded-lg shadow-md shadow-rose-200 hover:bg-rose-700 transition-colors active:scale-[0.99] flex items-center justify-center gap-2"
+                                        >
+                                            <Shield size={16} />
+                                            Renovar PRO por R$ 29,90
+                                        </button>
+                                        <p className="text-[10px] text-center text-rose-500 font-medium">
+                                            Válido até: {expiresDate.toLocaleDateString('pt-BR')}
+                                        </p>
+                                    </div>
+                                );
+                            }
+
+                            return (
+                                <div className="p-4 bg-pink-50 rounded-xl border border-pink-100 text-pink-800 text-sm flex flex-col gap-2">
+                                    <p>Você tem acesso a todos os recursos premium do BeautyStock! Aproveite.</p>
+                                    <p className="opacity-80 text-xs font-semibold">
+                                        Válido até: {expiresDate.toLocaleDateString('pt-BR')}
+                                    </p>
+                                </div>
+                            );
+                        })()}
                     </div>
                 ) : (
                     <div className="space-y-3">

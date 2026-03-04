@@ -4,16 +4,19 @@ import { useNavigate } from 'react-router-dom';
 import FAB from '../../components/Dashboard/FAB';
 import ProductCard from '../../components/Products/ProductCard';
 import ProductImporter from '../../components/Products/ProductImporter';
+import UpgradeModal from '../../components/UpgradeModal';
 import { usePlan } from '../../hooks/usePlan';
+import { canAddProduct } from '../../lib/planUtils';
 import { useProducts } from '../../hooks/useProducts';
 
 export default function ProductList() {
     const navigate = useNavigate();
-    const { isPro } = usePlan();
+    const { isPro, profile, usage, limits } = usePlan();
     const { products, loading, deleteProduct, fetchProducts } = useProducts();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('Todos');
     const [showImporter, setShowImporter] = useState(false);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
     const handleDelete = async (id) => {
         if (!confirm('Tem certeza que deseja excluir?')) return;
@@ -37,6 +40,14 @@ export default function ProductList() {
         }
     };
 
+    const handleCreateProduct = () => {
+        if (canAddProduct(profile, usage.productsCount)) {
+            navigate('/produtos/novo');
+        } else {
+            setShowUpgradeModal(true);
+        }
+    };
+
     const filteredProducts = products.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCategory = selectedCategory === 'Todos' || p.categories?.name === selectedCategory;
@@ -52,7 +63,7 @@ export default function ProductList() {
                 <div className="flex items-center gap-2">
                     {!isPro && (
                         <span className="text-[10px] font-bold bg-pink-100 text-pink-600 px-2.5 py-1 rounded-full uppercase tracking-wider">
-                            {products.length}/10 Produtos
+                            {usage.productsCount}/{limits?.products || 30} Produtos
                         </span>
                     )}
                 </div>
@@ -69,8 +80,8 @@ export default function ProductList() {
                                 key={cat}
                                 onClick={() => setSelectedCategory(cat)}
                                 className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold transition-all border shadow-sm ${selectedCategory === cat
-                                        ? 'bg-pink-50 text-pink-600 border-pink-200 shadow-pink-100/50'
-                                        : 'bg-white text-gray-500 border-gray-100 hover:border-gray-200'
+                                    ? 'bg-pink-50 text-pink-600 border-pink-200 shadow-pink-100/50'
+                                    : 'bg-white text-gray-500 border-gray-100 hover:border-gray-200'
                                     }`}
                             >
                                 {cat}
@@ -118,7 +129,7 @@ export default function ProductList() {
                         </div>
                         <p className="text-gray-500 font-medium">Nenhum produto encontrado</p>
                         <button
-                            onClick={() => navigate('/produtos/novo')}
+                            onClick={handleCreateProduct}
                             className="mt-2 text-pink-500 text-sm font-semibold hover:underline"
                         >
                             Cadastrar Novo
@@ -128,7 +139,7 @@ export default function ProductList() {
             </div>
 
             <div data-onboarding="add-product">
-                <FAB onClick={() => navigate('/produtos/novo')} label="Novo Produto" />
+                <FAB onClick={handleCreateProduct} label="Novo Produto" />
             </div>
 
             {showImporter && (
@@ -137,6 +148,13 @@ export default function ProductList() {
                     onSuccess={handleImportSuccess}
                 />
             )}
+
+            <UpgradeModal
+                isOpen={showUpgradeModal}
+                onClose={() => setShowUpgradeModal(false)}
+                limitText={`${limits?.products || 30} produtos`}
+                featureName="produtos"
+            />
         </div>
     );
 }

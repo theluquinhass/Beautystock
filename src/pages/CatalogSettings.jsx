@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Save, Copy, Store, Eye, EyeOff, Smartphone, ExternalLink, Loader2, ArrowLeft, Settings2 } from 'lucide-react';
+import { Save, Copy, Store, Eye, EyeOff, Smartphone, ExternalLink, Loader2, ArrowLeft, Settings2, ImagePlus, Trash2, Edit3 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { uploadProductImage } from '../lib/productImages';
 
 export default function CatalogSettings() {
     const navigate = useNavigate();
@@ -14,7 +15,11 @@ export default function CatalogSettings() {
         slug: '',
         whatsapp: '',
         is_active: true,
-        show_prices: true
+        show_prices: true,
+        store_name: '',
+        store_logo_url: '',
+        hero_title: '',
+        hero_subtitle: ''
     });
 
     const [categories, setCategories] = useState([]);
@@ -41,7 +46,11 @@ export default function CatalogSettings() {
                     slug: catSettings.slug || '',
                     whatsapp: catSettings.whatsapp || '',
                     is_active: catSettings.is_active,
-                    show_prices: catSettings.show_prices
+                    show_prices: catSettings.show_prices,
+                    store_name: catSettings.store_name || user.user_metadata?.first_name || '',
+                    store_logo_url: catSettings.store_logo_url || '',
+                    hero_title: catSettings.hero_title || '',
+                    hero_subtitle: catSettings.hero_subtitle || ''
                 });
                 setHasExistingSettings(true);
             }
@@ -101,6 +110,10 @@ export default function CatalogSettings() {
                 whatsapp: settings.whatsapp.trim(),
                 is_active: settings.is_active,
                 show_prices: settings.show_prices,
+                store_name: settings.store_name.trim(),
+                store_logo_url: settings.store_logo_url,
+                hero_title: settings.hero_title.trim(),
+                hero_subtitle: settings.hero_subtitle.trim(),
                 updated_at: new Date()
             };
 
@@ -140,6 +153,39 @@ export default function CatalogSettings() {
         }
     };
 
+    const handleLogoUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) { // 2MB limit
+            toast.error('A imagem deve ter no máximo 2MB.');
+            return;
+        }
+
+        try {
+            setSaving(true);
+            toast.loading('Fazendo upload da foto...', { id: 'upload' });
+            const { data: { user } } = await supabase.auth.getUser();
+
+            // Reusing product image uploader since it's just a storage wrapper
+            const path = await uploadProductImage(file, user.id);
+
+            // Resolve the public URL
+            const { data: urlData } = supabase.storage
+                .from('product-images')
+                .getPublicUrl(path);
+
+            setSettings(prev => ({ ...prev, store_logo_url: urlData.publicUrl }));
+            toast.success('Foto carregada com sucesso!', { id: 'upload' });
+        } catch (error) {
+            console.error('Error uploading logo:', error);
+            toast.error('Erro ao fazer upload da foto.', { id: 'upload' });
+        } finally {
+            setSaving(false);
+            e.target.value = ''; // Reset file input
+        }
+    };
+
     const handleCopyLink = () => {
         const url = `${window.location.origin}/c/${settings.slug}`;
         navigator.clipboard.writeText(url);
@@ -155,8 +201,8 @@ export default function CatalogSettings() {
     const catalogUrl = `${window.location.origin}/c/${settings.slug}`;
 
     return (
-        <div className="pb-24">
-            <div className="flex items-center gap-3 mb-6">
+        <div className="pb-24 w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 sm:mt-6">
+            <div className="flex items-center gap-3 mb-6 w-full">
                 <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
                     <ArrowLeft size={24} />
                 </button>
@@ -164,37 +210,45 @@ export default function CatalogSettings() {
             </div>
 
             {/* Smart Banner */}
-            <div className="bg-gradient-to-r from-pink-50 to-white p-5 rounded-3xl border border-pink-100 mb-8 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center shadow-soft">
-                <div>
-                    <h2 className="text-base font-bold text-pink-600 flex items-center gap-2 mb-1">
-                        <Store size={20} /> Sua Loja Online
-                    </h2>
-                    <p className="text-sm text-gray-600 font-medium">
-                        Crie um link exclusivo e venda seus produtos direto pelo WhatsApp.
-                    </p>
-                </div>
-                {hasExistingSettings && settings.is_active && settings.slug && (
-                    <div className="flex gap-2 w-full sm:w-auto">
-                        <button
-                            type="button"
-                            onClick={handleCopyLink}
-                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white text-gray-700 font-bold px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
-                        >
-                            <Copy size={16} /> Copiar
-                        </button>
-                        <a
-                            href={catalogUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex flex-1 sm:flex-none items-center justify-center gap-2 bg-pink-100 text-pink-700 font-bold px-4 py-2 rounded-xl hover:bg-pink-200 transition-colors shadow-sm"
-                        >
-                            <ExternalLink size={16} /> Abrir
-                        </a>
+            <div className="w-full bg-gradient-to-br from-pink-500 via-pink-600 to-purple-700 p-[2px] rounded-3xl mb-8 shadow-lg">
+                <div className="bg-white/95 backdrop-blur-xl p-6 sm:p-8 xl:p-10 rounded-[23px] flex flex-col items-center justify-center text-center gap-5 relative overflow-hidden w-full">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3 pointer-events-none"></div>
+
+                    <div className="flex flex-col items-center justify-center relative z-10 w-full text-center">
+                        <div className="w-14 h-14 bg-pink-50 text-pink-600 rounded-2xl flex items-center justify-center mb-4 shadow-inner border border-pink-100/50">
+                            <Store size={26} />
+                        </div>
+                        <h2 className="text-2xl font-black text-gray-900 mb-2">
+                            Sua Loja Online
+                        </h2>
+                        <p className="text-[15px] sm:text-base text-gray-600 font-medium max-w-md mx-auto leading-relaxed">
+                            Crie um link exclusivo e venda seus produtos de forma profissional pelas Redes sociais.
+                        </p>
                     </div>
-                )}
+                    {hasExistingSettings && settings.is_active && settings.slug && (
+                        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 w-full relative z-10 mt-3">
+                            <button
+                                type="button"
+                                onClick={handleCopyLink}
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white text-gray-700 font-bold px-8 py-3.5 border border-gray-200/80 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm active:scale-95"
+                            >
+                                <Copy size={18} /> Copiar Link
+                            </button>
+                            <a
+                                href={catalogUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-pink-600 text-white font-bold px-8 py-3.5 rounded-xl hover:bg-pink-700 transition-all shadow-[0_4px_14px_rgba(219,39,119,0.3)] hover:shadow-[0_6px_20px_rgba(219,39,119,0.4)] active:scale-95 hover:-translate-y-0.5"
+                            >
+                                <ExternalLink size={18} /> Abrir Catálogo
+                            </a>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-8 max-w-3xl">
+            <form onSubmit={handleSave} className="space-y-8 w-full">
                 {/* Configurações Gerais */}
                 <div className="bg-white p-6 rounded-3xl shadow-soft border border-gray-100">
                     <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
@@ -202,6 +256,19 @@ export default function CatalogSettings() {
                     </h3>
 
                     <div className="space-y-5">
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-gray-700">Nome da Loja</label>
+                            <input
+                                type="text"
+                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all text-gray-900 font-medium outline-none"
+                                placeholder="Minha Loja Oficial"
+                                value={settings.store_name}
+                                onChange={e => setSettings({ ...settings, store_name: e.target.value })}
+                                required
+                            />
+                            <p className="text-xs text-gray-400 font-medium ml-1">O nome que aparecerá no topo do catálogo público.</p>
+                        </div>
+
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-gray-700">Link do seu catálogo</label>
                             <div className="flex items-center gap-0 bg-gray-50 border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-pink-200 focus-within:border-pink-300 transition-all">
@@ -236,6 +303,53 @@ export default function CatalogSettings() {
                             <p className="text-xs text-gray-400 font-medium ml-1">Coloque o código do país (55) e DDD.</p>
                         </div>
 
+                        <div className="space-y-3">
+                            <label className="text-sm font-bold text-gray-700">Logo ou Foto do Perfil</label>
+                            <div className="flex flex-col sm:flex-row items-center gap-4">
+                                {settings.store_logo_url ? (
+                                    <div className="relative group w-24 h-24 rounded-2xl border-2 border-gray-100 overflow-hidden shadow-sm flex-shrink-0">
+                                        <img
+                                            src={settings.store_logo_url}
+                                            alt="Logo da Loja"
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => setSettings({ ...settings, store_logo_url: '' })}
+                                                className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg transform scale-90 group-hover:scale-100"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="w-24 h-24 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 flex-shrink-0 shadow-inner">
+                                        <ImagePlus size={24} className="mb-1 opacity-50" />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Foto</span>
+                                    </div>
+                                )}
+                                <div className="flex-1 w-full sm:w-auto">
+                                    <div className="relative">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleLogoUpload}
+                                            disabled={saving}
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                        />
+                                        <button
+                                            type="button"
+                                            className="w-full bg-white border border-gray-200 text-gray-700 font-bold px-4 py-2.5 rounded-xl hover:bg-gray-50 hover:border-pink-300 transition-all shadow-sm disabled:opacity-50"
+                                        >
+                                            {settings.store_logo_url ? 'Trocar Foto' : 'Escolher Foto'}
+                                        </button>
+                                    </div>
+                                    <p className="text-[11px] text-gray-400 mt-2 font-medium">Recomendado: 500x500px. JPG ou PNG. Máx 2MB.</p>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="flex flex-col gap-4 pt-2">
                             <label className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 cursor-pointer">
                                 <div>
@@ -262,6 +376,40 @@ export default function CatalogSettings() {
                                     onChange={e => setSettings({ ...settings, show_prices: e.target.checked })}
                                 />
                             </label>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Personalização do Catálogo */}
+                <div className="bg-white p-6 rounded-3xl shadow-soft border border-gray-100">
+                    <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                        <Edit3 size={20} className="text-pink-500" />
+                        Aparência e Boas-Vindas
+                    </h3>
+
+                    <div className="space-y-5">
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-gray-700">Título Principal (Hero)</label>
+                            <input
+                                type="text"
+                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all text-gray-900 font-medium outline-none"
+                                placeholder={`Bem-vindo(a) à ${settings.store_name || 'minha loja'}`}
+                                value={settings.hero_title}
+                                onChange={e => setSettings({ ...settings, hero_title: e.target.value })}
+                            />
+                            <p className="text-xs text-gray-400 font-medium ml-1">Deixe em branco para usar o padrão: "Bem-vindo(a) à [Sua Loja]".</p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-gray-700">Subtítulo / Descrição</label>
+                            <textarea
+                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all text-gray-900 font-medium outline-none resize-none"
+                                placeholder="Explore nossa seleção exclusiva de produtos..."
+                                rows="3"
+                                value={settings.hero_subtitle}
+                                onChange={e => setSettings({ ...settings, hero_subtitle: e.target.value })}
+                            />
+                            <p className="text-xs text-gray-400 font-medium ml-1">Um texto curto para descrever sua loja ou promoções.</p>
                         </div>
                     </div>
                 </div>

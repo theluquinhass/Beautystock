@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { ArrowLeft, Edit, Wallet } from 'lucide-react';
+import { ArrowLeft, Edit, Trash, Wallet } from 'lucide-react';
 import { Card } from '../../components/ui/card';
 import CustomerHistory from '../../components/Customers/CustomerHistory';
 import PaymentModal from '../../components/Customers/PaymentModal';
 import ChargeModal from '../../components/Customers/ChargeModal';
 import { getPublicCustomerPhotoUrl } from '../../lib/customerPhotos';
+import toast from 'react-hot-toast';
 
 export default function CustomerView() {
     const { id } = useParams();
@@ -65,6 +66,24 @@ export default function CustomerView() {
         }
     };
 
+    const handleDelete = async () => {
+        if (!confirm('Tem certeza que deseja excluir este cliente? Histórico associado pode impedir a exclusão em caso de faturas abertas.')) return;
+
+        try {
+            setLoading(true);
+            const { error } = await supabase.from('customers').delete().eq('id', id);
+            if (error) throw error;
+
+            toast.success('Cliente excluído com sucesso!');
+            navigate('/clientes');
+        } catch (error) {
+            console.error(error);
+            toast.error('Erro ao excluir. O cliente pode ter movimentações registradas que impedem a exclusão direta.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (loading || !customer) return <div>Carregando...</div>;
 
     // Calc Debt
@@ -97,6 +116,9 @@ export default function CustomerView() {
                 </div>
                 <button onClick={() => navigate(`/clientes/${id}/editar`)} className="p-2 text-gray-500 hover:text-primary transition-colors bg-white rounded-full shadow-sm border border-gray-100">
                     <Edit size={20} />
+                </button>
+                <button onClick={handleDelete} className="p-2 text-red-400 hover:text-red-500 transition-colors bg-white rounded-full shadow-sm border border-red-50 hover:bg-red-50" title="Excluir Cliente">
+                    <Trash size={20} />
                 </button>
             </div>
 

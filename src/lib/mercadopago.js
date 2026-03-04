@@ -29,7 +29,21 @@ export async function startProCheckout() {
             }
         });
 
-        if (error) throw error;
+        if (error) {
+            // Try to parse the Edge Function error response body which contains the true Mercado Pago API error
+            let finalMessage = error.message;
+            if (error.context && error.context.json) {
+                try {
+                    const errorBody = await error.context.json();
+                    if (errorBody && errorBody.error) {
+                        finalMessage = typeof errorBody.error === 'string' ? errorBody.error : JSON.stringify(errorBody.error);
+                    }
+                } catch (e) {
+                    // ignore json parsing error
+                }
+            }
+            throw new Error(finalMessage);
+        }
 
         if (data?.init_point) {
             return data.init_point;
@@ -39,6 +53,111 @@ export async function startProCheckout() {
 
     } catch (error) {
         console.error('Erro ao iniciar checkout:', error);
+        throw error;
+    }
+}
+
+/**
+ * Inicia o fluxo de checkout transparente via PIX (Copia e Cola + QR Code)
+ * Chama a Edge Function que interage com a API de Payments do Mercado Pago.
+ */
+export const startProTransparentPix = async () => {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Usuário não autenticado');
+
+        const { data: { user } } = await supabase.auth.getUser();
+
+        // Invoca a nova Edge Function de Pagamento Transparente
+        const { data, error } = await supabase.functions.invoke('create-pix-payment', {
+            body: {
+                userId: user.id,
+                email: user.email
+            },
+            headers: {
+                Authorization: `Bearer ${session.access_token}`
+            }
+        });
+
+        if (error) {
+            console.error("Function error details:", error);
+            throw new Error(error.message || 'Erro ao comunicar com o servidor de pagamento');
+        }
+
+        if (!data?.success) {
+            console.error("Payment API Error:", data?.error);
+            throw new Error(data?.error || 'Erro ao gerar o PIX');
+        }
+
+        // Retorna os dados do PIX transparente para a UI
+        return {
+            paymentId: data.paymentId,
+            qrCode: data.qrCode,
+            qrCodeBase64: data.qrCodeBase64
+        };
+
+    } catch (error) {
+        console.error('Error starting transparent PRO PIX:', error);
+        throw error;
+    }
+};
+
+export const startProPixCheckout = async () => {
+    try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+            console.error('Auth error in checkout:', userError);
+            throw new Error('Você precisa estar logado para assinar.');
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session?.access_token) {
+            console.log('Token starts with:', session.access_token.substring(0, 10));
+        } else {
+            console.error('No access token found in session');
+            throw new Error('Sessão expirada. Faça login novamente.');
+        }
+
+        const { data, error } = await supabase.functions.invoke('create-preference', {
+            body: {
+                userId: user.id,
+                email: user.email
+            },
+            headers: {
+                Authorization: `Bearer ${session.access_token}`
+            }
+        });
+
+        if (error) {
+            console.error('Padrão Error invoking edge function:', error);
+            console.log('Error context:', error.context);
+            let finalMessage = error.message;
+
+            try {
+                if (error.context && error.context.json) {
+                    const jsonContext = await error.context.json();
+                    if (jsonContext.error) {
+                        finalMessage = jsonContext.error;
+                    }
+                }
+            } catch (parseError) {
+                console.warn('Could not parse error response:', parseError);
+            }
+
+            throw new Error(finalMessage);
+        }
+
+        if (data?.initPoint) {
+            window.location.href = data.initPoint;
+        } else {
+            console.error('Invalid success response without initPoint:', data);
+            throw new Error('Resposta inválida do servidor ao gerar link PIX.');
+        }
+
+    } catch (error) {
+        console.error('Full checkout error:', error);
         throw error;
     }
 }

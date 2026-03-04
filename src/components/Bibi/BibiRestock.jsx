@@ -3,8 +3,11 @@ import { ShoppingBag, TrendingDown, Clock, Check, Plus, Copy, Send, Download } f
 import { generateBuyListText, exportToCSV } from './bibiUtils';
 import toast from 'react-hot-toast';
 import { cn } from '../../lib/utils';
+import { useNavigate } from 'react-router-dom';
 
-export default function BibiRestock({ alerts, strategyDays, shoppingList, onToggleList }) {
+export default function BibiRestock({ alerts, strategyDays, shoppingList, onToggleList, isPro = true }) {
+    const navigate = useNavigate();
+
     if (!alerts || alerts.length === 0) {
         return (
             <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-80 pt-10">
@@ -48,37 +51,39 @@ export default function BibiRestock({ alerts, strategyDays, shoppingList, onTogg
 
     return (
         <div className="flex flex-col gap-3 pb-20">
-            {/* Action Buttons */}
-            <div className="grid grid-cols-3 gap-2 mb-2">
-                <button
-                    onClick={handleCopy}
-                    className="flex flex-col items-center justify-center gap-1.5 p-2 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all group"
-                >
-                    <div className="bg-gray-50 text-gray-600 p-1.5 rounded-lg group-hover:bg-gray-100 transition-colors relative">
-                        <Copy size={16} />
-                        {shoppingList.length > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 bg-pink-500 rounded-full border-2 border-white" />}
-                    </div>
-                    <span className="text-[10px] font-bold text-gray-600">Copiar</span>
-                </button>
-                <button
-                    onClick={handleExport}
-                    className="flex flex-col items-center justify-center gap-1.5 p-2 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all group"
-                >
-                    <div className="bg-blue-50 text-blue-600 p-1.5 rounded-lg group-hover:bg-blue-100 transition-colors">
-                        <Download size={16} />
-                    </div>
-                    <span className="text-[10px] font-bold text-gray-600">CSV</span>
-                </button>
-                <button
-                    onClick={handleWhatsApp}
-                    className="flex flex-col items-center justify-center gap-1.5 p-2 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all group"
-                >
-                    <div className="bg-emerald-50 text-emerald-600 p-1.5 rounded-lg group-hover:bg-emerald-100 transition-colors">
-                        <Send size={16} />
-                    </div>
-                    <span className="text-[10px] font-bold text-gray-600">WhatsApp</span>
-                </button>
-            </div>
+            {/* Action Buttons (Only for PRO) */}
+            {isPro && (
+                <div className="grid grid-cols-3 gap-2 mb-2">
+                    <button
+                        onClick={handleCopy}
+                        className="flex flex-col items-center justify-center gap-1.5 p-2 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all group"
+                    >
+                        <div className="bg-gray-50 text-gray-600 p-1.5 rounded-lg group-hover:bg-gray-100 transition-colors relative">
+                            <Copy size={16} />
+                            {shoppingList.length > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 bg-pink-500 rounded-full border-2 border-white" />}
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-600">Copiar</span>
+                    </button>
+                    <button
+                        onClick={handleExport}
+                        className="flex flex-col items-center justify-center gap-1.5 p-2 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all group"
+                    >
+                        <div className="bg-blue-50 text-blue-600 p-1.5 rounded-lg group-hover:bg-blue-100 transition-colors">
+                            <Download size={16} />
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-600">CSV</span>
+                    </button>
+                    <button
+                        onClick={handleWhatsApp}
+                        className="flex flex-col items-center justify-center gap-1.5 p-2 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all group"
+                    >
+                        <div className="bg-emerald-50 text-emerald-600 p-1.5 rounded-lg group-hover:bg-emerald-100 transition-colors">
+                            <Send size={16} />
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-600">WhatsApp</span>
+                    </button>
+                </div>
+            )}
 
             {alerts.map((item, idx) => {
                 const isInList = shoppingList.some(i => i.id === item.id);
@@ -144,28 +149,45 @@ export default function BibiRestock({ alerts, strategyDays, shoppingList, onTogg
                             )}
                         </div>
 
-                        <button
-                            onClick={() => handleToggleList(item)}
-                            className={cn(
-                                "w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all border",
-                                isInList
-                                    ? "bg-purple-50 text-purple-700 border border-purple-200"
-                                    : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
-                            )}
-                        >
-                            {isInList ? (
-                                <>
-                                    <Check size={14} /> Na lista ({item.suggested_qty} un)
-                                </>
-                            ) : (
-                                <>
-                                    <Plus size={14} /> Adicionar à lista ({item.suggested_qty} un)
-                                </>
-                            )}
-                        </button>
+                        {isPro ? (
+                            <button
+                                onClick={() => handleToggleList(item)}
+                                className={cn(
+                                    "w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all border",
+                                    isInList
+                                        ? "bg-purple-50 text-purple-700 border border-purple-200"
+                                        : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                                )}
+                            >
+                                {isInList ? (
+                                    <>
+                                        <Check size={14} /> Na lista ({item.suggested_qty} un)
+                                    </>
+                                ) : (
+                                    <>
+                                        <Plus size={14} /> Adicionar à lista ({item.suggested_qty} un)
+                                    </>
+                                )}
+                            </button>
+                        ) : null}
                     </div>
                 )
             })}
+
+            {!isPro && (
+                <div className="mt-2 bg-gradient-to-br from-gray-900 to-gray-800 p-5 rounded-2xl shadow-xl border border-gray-700 text-center relative overflow-hidden">
+                    <h3 className="text-white font-black text-sm mb-1">Quer ver a lista completa?</h3>
+                    <p className="text-gray-400 text-xs font-medium mb-3">
+                        Desbloqueie todas as previsões, adicione à lista e exporte com 1 clique no PRO.
+                    </p>
+                    <button
+                        onClick={() => navigate('/upgrade')}
+                        className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-2.5 rounded-xl transition-colors text-sm shadow-sm"
+                    >
+                        Desbloquear PRO
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

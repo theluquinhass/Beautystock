@@ -4,6 +4,9 @@ import { Plus, Trash, Loader2, Search, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import FAB from '../components/Dashboard/FAB';
+import { usePlan } from '../hooks/usePlan';
+import { canAddCategory } from '../lib/planUtils';
+import UpgradeModal from '../components/UpgradeModal';
 
 const CATEGORY_COLORS = [
     { value: '#ec4899', label: 'Rosa' },
@@ -16,12 +19,22 @@ const CATEGORY_COLORS = [
 
 export default function Categories() {
     const navigate = useNavigate();
+    const { profile, isPro, usage, limits } = usePlan();
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [showModal, setShowModal] = useState(false);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [formData, setFormData] = useState({ name: '', color: '#ec4899' });
+
+    const handleOpenModal = () => {
+        if (!canAddCategory(profile, usage.categoriesCount)) {
+            setShowUpgradeModal(true);
+            return;
+        }
+        setShowModal(true);
+    };
 
     useEffect(() => {
         fetchCategories();
@@ -134,7 +147,14 @@ export default function Categories() {
                 >
                     <ArrowLeft size={24} />
                 </button>
-                <h1 className="text-2xl font-bold text-gray-800">Categorias</h1>
+                <div className="flex items-center justify-between flex-1">
+                    <h1 className="text-2xl font-bold text-gray-800">Categorias</h1>
+                    {!isPro && (
+                        <span className="text-[10px] font-bold bg-pink-100 text-pink-600 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                            {usage.categoriesCount}/{limits?.categories || 5} Categorias
+                        </span>
+                    )}
+                </div>
             </div>
 
             {/* Smart Organization Banner */}
@@ -193,7 +213,7 @@ export default function Categories() {
                     <div className="text-center py-10 bg-white rounded-2xl border-2 border-dashed border-pink-100">
                         <p className="text-gray-500 font-medium">Nenhuma categoria encontrada.</p>
                         <button
-                            onClick={() => setShowModal(true)}
+                            onClick={handleOpenModal}
                             className="mt-2 text-pink-500 font-bold hover:underline"
                         >
                             Tentar criar uma?
@@ -202,7 +222,7 @@ export default function Categories() {
                 )}
             </div>
 
-            <FAB onClick={() => setShowModal(true)} label="Nova Categoria" />
+            <FAB onClick={handleOpenModal} label="Nova Categoria" />
 
             {/* Create Modal */}
             {showModal && (
@@ -285,6 +305,13 @@ export default function Categories() {
                     </div>
                 </div>
             )}
+
+            <UpgradeModal
+                isOpen={showUpgradeModal}
+                onClose={() => setShowUpgradeModal(false)}
+                limitText={`${limits?.categories || 5} categorias`}
+                featureName="categorias"
+            />
         </div>
     );
 }

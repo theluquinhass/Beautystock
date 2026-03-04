@@ -1,21 +1,14 @@
-import { Crown, Check, X, Loader2 } from 'lucide-react';
+import { Crown, Check, X } from 'lucide-react';
 import { usePlan } from '../hooks/usePlan';
-import { startProCheckout } from '../lib/mercadopago';
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Upgrade() {
     const { isPro } = usePlan();
-    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
-    const handleSubscribe = async () => {
-        setLoading(true);
-        try {
-            const checkoutUrl = await startProCheckout();
-            window.location.href = checkoutUrl;
-        } catch (error) {
-            console.error(error);
-            alert('Erro ao iniciar pagamento. Tente novamente.');
-            setLoading(false);
+    const handleSubscribe = () => {
+        if (!isPro) {
+            navigate('/checkout/pro');
         }
     };
 
@@ -45,11 +38,11 @@ export default function Upgrade() {
                     <ul className="space-y-3 mb-6">
                         <li className="flex items-center text-gray-600 text-sm">
                             <Check size={18} className="text-green-500 mr-2 flex-shrink-0" />
-                            <span>Até 5 produtos</span>
+                            <span>Até 50 produtos</span>
                         </li>
-                        <li className="flex items-center text-gray-400 text-sm">
-                            <X size={18} className="text-gray-300 mr-2 flex-shrink-0" />
-                            <span>Gestão de Clientes (CRM)</span>
+                        <li className="flex items-center text-gray-600 text-sm">
+                            <Check size={18} className="text-green-500 mr-2 flex-shrink-0" />
+                            <span>Até 5 clientes (CRM)</span>
                         </li>
                         <li className="flex items-center text-gray-400 text-sm">
                             <X size={18} className="text-gray-300 mr-2 flex-shrink-0" />
@@ -100,30 +93,26 @@ export default function Upgrade() {
                         </li>
                     </ul>
 
-                    <button
-                        onClick={handleSubscribe}
-                        disabled={loading || isPro}
-                        className="w-full bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-pink-200 hover:shadow-pink-300 hover:brightness-105 active:scale-95 transition-all text-lg flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                        {loading ? (
-                            <>
-                                <Loader2 size={24} className="animate-spin" />
-                                Redirecionando...
-                            </>
-                        ) : isPro ? (
-                            <>
-                                Plano Atual
-                                <Check size={24} />
-                            </>
-                        ) : (
-                            <>
-                                Assinar Agora
-                                <Crown size={20} className="group-hover:rotate-12 transition-transform duration-300" />
-                            </>
-                        )}
-                    </button>
+                    <div className="flex flex-col gap-3 mt-4">
+                        <button
+                            onClick={handleSubscribe}
+                            disabled={isPro}
+                            className="w-full bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-pink-200 hover:shadow-pink-300 hover:brightness-105 active:scale-95 transition-all text-lg flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                            {isPro ? (
+                                <>
+                                    Você já é PRO <Check size={24} />
+                                </>
+                            ) : (
+                                <>
+                                    Assinar Agora
+                                    <Crown size={20} className="group-hover:rotate-12 transition-transform duration-300" />
+                                </>
+                            )}
+                        </button>
+                    </div>
 
-                    <p className="text-center text-gray-400 text-xs mt-4">Cancele quando quiser.</p>
+                    <p className="text-center text-gray-400 text-xs mt-6">Cancele quando quiser.</p>
                 </div>
 
             </div>

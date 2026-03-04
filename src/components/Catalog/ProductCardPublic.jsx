@@ -1,96 +1,113 @@
-import { MessageCircle, Copy, Box } from 'lucide-react';
+import { MessageCircle, Copy, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getPublicImageUrl } from '../../lib/productImages';
 
 export default function ProductCardPublic({ product, catalog, handleOrder }) {
+    if (!product) return null;
+
     const handleCopy = () => {
-        let text = `Gostaria de pedir: ${product.name}`;
+        let text = `Gostaria de pedir: ${product.name || 'Produto'}`;
         if (product.variations?.length > 0) {
-            text += ` (${product.variations[0].name})`;
+            text += ` (${product.variations[0].name || ''})`;
         }
-        if (catalog.show_prices && product.price) {
-            text += ` por R$ ${product.price.toFixed(2)}`;
+        if (catalog?.show_prices && product.price) {
+            text += ` por R$ ${Number(product.price).toFixed(2)}`;
         }
         navigator.clipboard.writeText(text);
-        toast.success('Mensagem copiada!');
+        toast.success('Produto copiado!');
     };
 
-    const isLowStock = product.variations?.some(v => v.stock_quantity > 0 && v.stock_quantity <= 5);
-    const outOfStock = product.variations?.every(v => v.stock_quantity === 0) && product.variations?.length > 0;
-    const imageUrl = getPublicImageUrl(product.image_path, product.name);
+    const variations = Array.isArray(product.variations) ? product.variations : [];
+    const isLowStock = variations.some(v => v.stock_quantity > 0 && v.stock_quantity <= 5);
+    const outOfStock = variations.length > 0 && variations.every(v => v.stock_quantity === 0);
+    const imageUrl = getPublicImageUrl(product.image_path, product.name || '');
+
+    const price = product.price ? Number(product.price).toFixed(2) : null;
 
     return (
-        <div className="bg-white rounded-[2rem] p-5 shadow-soft border border-pink-50/80 flex flex-col justify-between hover:shadow-lg transition-all duration-300 lg:hover:-translate-y-1 relative group overflow-hidden">
+        <div className="bg-white rounded-[2rem] p-4 sm:p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/80 flex flex-col justify-between hover:shadow-[0_20px_40px_-15px_rgba(236,72,153,0.15)] transition-all duration-500 hover:border-pink-100/50 lg:hover:-translate-y-1.5 relative group overflow-hidden h-full">
             {/* Image Section */}
-            <div className="w-full aspect-square bg-pink-50 rounded-2xl mb-4 relative overflow-hidden group-hover:scale-[1.02] transition-transform">
-                <div className="absolute inset-0 bg-gradient-to-br from-pink-50 to-pink-100/50 animate-pulse" />
+            <div className="w-full aspect-[4/5] sm:aspect-square bg-gray-50 rounded-[1.5rem] mb-5 relative overflow-hidden group-hover:shadow-inner transition-all flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-pink-50/30" />
 
                 <img
                     src={imageUrl}
-                    alt={product.name}
-                    className="absolute inset-0 w-full h-full object-cover z-10 opacity-0 transition-opacity duration-500"
+                    alt={product.name || 'Produto'}
+                    className="absolute inset-0 w-full h-full object-cover z-10 opacity-0 transition-opacity duration-700 sm:group-hover:scale-105 transform origin-center"
                     onLoad={(e) => e.target.classList.remove('opacity-0')}
                     loading="lazy"
                 />
 
-                {/* Decorative glow overlay */}
-                <div className="absolute inset-0 bg-pink-500/0 group-hover:bg-pink-500/5 transition-colors z-20" />
-            </div>
+                {/* Decorative glow overlay on hover */}
+                <div className="absolute inset-0 bg-gradient-to-t from-pink-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none" />
 
-            <div className="flex flex-col flex-1 mb-4">
-                {/* Badges */}
-                <div className="flex flex-wrap gap-2 mb-3">
-                    {outOfStock ? (
-                        <span className="px-2 py-1 bg-red-50 text-red-600 font-bold text-[10px] uppercase rounded-lg border border-red-100 flex items-center gap-1">
+                {/* Out of Stock Overlay completely blocks image softly */}
+                {outOfStock && (
+                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-30 flex items-center justify-center">
+                        <span className="bg-gray-900 text-white font-black text-xs uppercase tracking-widest px-4 py-2 rounded-full shadow-lg rotate-[-12deg]">
                             Esgotado
                         </span>
-                    ) : isLowStock ? (
-                        <span className="px-2 py-1 bg-orange-50 text-orange-600 font-bold text-[10px] uppercase rounded-lg border border-orange-100">
-                            Últimas Unidades
-                        </span>
-                    ) : null}
-
-                    {product.variations?.map((v, i) => (
-                        <span key={v.id || i} className="px-2 py-1 bg-gray-50 border border-gray-100 text-gray-600 font-bold text-[10px] uppercase rounded-lg">
-                            {v.name}
-                        </span>
-                    ))}
-                </div>
-
-                <h3 className="font-extrabold text-gray-900 text-lg leading-snug mb-2 line-clamp-2" title={product.name}>
-                    {product.name}
-                </h3>
-
-                {catalog.show_prices && (
-                    <p className="text-pink-600 font-black text-2xl mt-1 tracking-tight">
-                        <span className="text-sm font-bold opacity-70 mr-1">R$</span>
-                        {product.price?.toFixed(2)}
-                    </p>
+                    </div>
                 )}
             </div>
 
-            <div className="flex gap-2 mt-auto pt-4 border-t border-gray-50">
+            <div className="flex flex-col flex-1 mb-5 relative z-30">
+                {/* Badges Container */}
+                <div className="flex flex-wrap gap-1.5 mb-3 min-h-[22px]">
+                    {!outOfStock && isLowStock && (
+                        <span className="px-2.5 py-1 bg-gradient-to-r from-orange-50 to-red-50 text-orange-700 font-extrabold text-[9px] uppercase tracking-wider rounded-lg border border-orange-100/50 flex items-center gap-1 shadow-sm">
+                            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
+                            Últimas Unidades
+                        </span>
+                    )}
+
+                    {!outOfStock && variations.slice(0, 2).map((v, i) => (
+                        <span key={v.id || i} className="px-2.5 py-1 bg-gray-50 border border-gray-100 text-gray-500 font-bold text-[10px] uppercase rounded-lg">
+                            {v.name || 'Variação'}
+                        </span>
+                    ))}
+                    {!outOfStock && variations.length > 2 && (
+                        <span className="px-2.5 py-1 bg-gray-50 border border-gray-100 text-gray-400 font-bold text-[10px] uppercase rounded-lg">
+                            +{variations.length - 2}
+                        </span>
+                    )}
+                </div>
+
+                <h3 className="font-extrabold text-gray-900 text-[17px] sm:text-lg leading-snug mb-2 line-clamp-2 group-hover:text-pink-600 transition-colors" title={product.name}>
+                    {product.name || 'Produto sem nome'}
+                </h3>
+
+                {catalog?.show_prices ? (
+                    <div className="mt-1 flex items-baseline gap-1.5">
+                        <span className="text-sm font-bold text-gray-400">R$</span>
+                        <p className="font-black text-2xl tracking-tight text-gray-900">
+                            {price || '0.00'}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="mt-1 flex items-center text-xs font-bold text-gray-400 gap-1 opacity-70">
+                        <CheckCircle2 size={14} /> Consulte disponibilidade
+                    </div>
+                )}
+            </div>
+
+            <div className="flex gap-2.5 mt-auto relative z-30">
                 <button
                     onClick={() => handleOrder(product)}
                     disabled={outOfStock}
-                    className={`flex-1 font-bold py-3 px-4 rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95 text-sm ${outOfStock
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-[#25D366] hover:bg-[#20bd5a] text-white hover:shadow-md'
+                    className={`w-full font-bold py-3.5 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95 text-[13px] uppercase tracking-wide
+                    ${outOfStock
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200/50'
+                            : 'bg-black hover:bg-gray-800 text-white hover:shadow-[0_8px_16px_rgba(0,0,0,0.15)] hover:-translate-y-0.5'
                         }`}
                 >
-                    <MessageCircle fill="currentColor" size={18} />
-                    <span className="truncate">Pedir agora</span>
+                    {outOfStock ? 'Indisponível' : (
+                        <>
+                            <MessageCircle size={16} />
+                            <span className="truncate">Eu Quero</span>
+                        </>
+                    )}
                 </button>
-
-                {!outOfStock && (
-                    <button
-                        onClick={handleCopy}
-                        className="w-12 h-[44px] flex-shrink-0 bg-white border border-gray-200 text-gray-500 hover:text-pink-600 hover:border-pink-200 hover:bg-pink-50 rounded-2xl flex items-center justify-center transition-all shadow-sm group-hover:shadow"
-                        title="Copiar mensagem do pedido"
-                    >
-                        <Copy size={18} />
-                    </button>
-                )}
             </div>
         </div>
     );

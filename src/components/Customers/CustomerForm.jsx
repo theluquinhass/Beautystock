@@ -2,8 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
-import { Camera, X } from 'lucide-react';
+import { Camera, X, Trash } from 'lucide-react';
 import { uploadCustomerPhoto, getPublicCustomerPhotoUrl } from '../../lib/customerPhotos';
+import { usePlan } from '../../hooks/usePlan';
+import { canAddCustomer } from '../../lib/planUtils';
+import UpgradeModal from '../UpgradeModal';
 
 export default function CustomerForm({ initialData = {} }) {
     const navigate = useNavigate();
@@ -13,6 +16,9 @@ export default function CustomerForm({ initialData = {} }) {
         phone: initialData.phone || '',
         notes: initialData.notes || ''
     });
+
+    const { profile, usage, limits } = usePlan();
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
     const [imageFile, setImageFile] = useState(null);
     const [imagePreview, setImagePreview] = useState(initialData.photo_path ? getPublicCustomerPhotoUrl(initialData.photo_path) : null);
@@ -41,10 +47,29 @@ export default function CustomerForm({ initialData = {} }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (!isEditing && !canAddCustomer(profile, usage.customersCount)) {
+            setShowUpgradeModal(true);
+            return;
+        }
+
         setLoading(true);
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
+
+            if (!isEditing) {
+                const { count } = await supabase
+                    .from('customers')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('user_id', user.id);
+
+                if (!canAddCustomer(profile, count)) {
+                    setLoading(false);
+                    setShowUpgradeModal(true);
+                    return;
+                }
+            }
 
             if (isEditing) {
                 let customerId = initialData.id;
@@ -93,6 +118,24 @@ export default function CustomerForm({ initialData = {} }) {
         } catch (error) {
             console.error(error);
             toast.error('Erro ao salvar cliente');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!confirm('Tem certeza que deseja excluir este cliente? Histórico associado pode impedir a exclusão em caso de faturas abertas.')) return;
+
+        try {
+            setLoading(true);
+            const { error } = await supabase.from('customers').delete().eq('id', initialData.id);
+            if (error) throw error;
+
+            toast.success('Cliente excluído com sucesso!');
+            navigate('/clientes');
+        } catch (error) {
+            console.error(error);
+            toast.error('Erro ao excluir. O cliente pode ter movimentações registradas que impedem a exclusão direta.');
         } finally {
             setLoading(false);
         }
@@ -179,6 +222,29 @@ export default function CustomerForm({ initialData = {} }) {
             >
                 {loading ? 'Salvando...' : (isEditing ? 'Salvar Alterações' : 'Cadastrar Cliente')}
             </button>
+
+            {isEditing && (
+                <button
+                    type="button"
+                    onClick={handleDelete}
+                    className="w-full bg-white text-red-500 font-bold py-4 rounded-2xl shadow-sm border border-red-100 hover:bg-red-50 active:scale-[0.99] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                    disabled={loading}
+                >
+                    {loading ? 'Excluindo...' : (
+                        <>
+                            <Trash size={20} />
+                            Excluir Cliente
+                        </>
+                    )}
+                </button>
+            )}
+
+            <UpgradeModal
+                isOpen={showUpgradeModal}
+                onClose={() => setShowUpgradeModal(false)}
+                limitText={`${limits?.customers || 15} clientes`}
+                featureName="clientes"
+            />
         </form>
     );
 }

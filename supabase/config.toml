@@ -1,0 +1,33 @@
+
+[functions.create-preference]
+enabled = true
+verify_jwt = true
+import_map = "./functions/create-preference/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/create-preference/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/create-preference/*.html" ]
+
+[functions.check-plan-expiration]
+enabled = true
+verify_jwt = true
+import_map = "./functions/check-plan-expiration/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/check-plan-expiration/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/check-plan-expiration/*.html" ]
+
+[functions.create-pro-renewal-preference]
+enabled = true
+verify_jwt = true
+import_map = "./functions/create-pro-renewal-preference/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/create-pro-renewal-preference/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/create-pro-renewal-preference/*.html" ]

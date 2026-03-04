@@ -10,17 +10,31 @@ import ProfitChart from '../components/ProfitChart';
 import TopDebtorsCard from '../components/Dashboard/TopDebtorsCard';
 import BibiInsights from '../components/Dashboard/BibiInsights';
 import GettingStartedChecklist from '../components/Dashboard/GettingStartedChecklist';
+import { useState } from 'react';
 import DashboardCategories from '../components/Dashboard/DashboardCategories';
+import { usePlan } from '../hooks/usePlan';
+import { canRegisterSale } from '../lib/planUtils';
+import UpgradeModal from '../components/UpgradeModal';
 
 export default function Dashboard() {
     const navigate = useNavigate();
     const { loading, stats, recentMovements, bestSellers, userName } = useDashboard();
+    const { profile, usage, limits } = usePlan();
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+    const handleNewSale = () => {
+        if (!canRegisterSale(profile, usage.monthlySalesCount)) {
+            setShowUpgradeModal(true);
+            return;
+        }
+        navigate('/movimentacoes/nova');
+    };
 
     if (loading) return <div className="h-screen flex items-center justify-center text-pink-500"><Loader2 className="animate-spin" size={32} /></div>;
 
     return (
         <div className="pb-24 lg:pb-0">
-            <div className="lg:hidden">
+            <div className="lg:hidden relative z-50">
                 <Header userName={userName} subtitle="Seu lucro este mês está crescendo! 🚀" />
             </div>
 
@@ -103,8 +117,15 @@ export default function Dashboard() {
             </div>
 
             <div className="lg:hidden" data-onboarding="add-movement">
-                <FAB onClick={() => navigate('/movimentacoes/nova')} label="Nova Venda" />
+                <FAB onClick={handleNewSale} label="Nova Venda" />
             </div>
+
+            <UpgradeModal
+                isOpen={showUpgradeModal}
+                onClose={() => setShowUpgradeModal(false)}
+                limitText={`${limits?.monthly_sales || 60} vendas no mês`}
+                featureName="vendas"
+            />
         </div>
     );
 }

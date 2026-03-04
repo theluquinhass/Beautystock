@@ -1,22 +1,18 @@
 import { supabase } from './supabase';
 
-export const PLANS = {
-    FREE: {
-        name: 'free',
-        limits: {
-            products: 10,
-            customers: false, // Access allowed? False = No
-            reports: false,
-        }
-    },
-    PRO: {
-        name: 'pro',
-        limits: {
-            products: Infinity,
-            customers: true,
-            reports: true,
-        }
-    }
+export const FREE_LIMITS = {
+    products: 50,
+    product_photos: 30,
+    categories: 5,
+    monthly_sales: 60,
+    customers: 5,
+    active_debts: 10,
+    catalog_enabled: true,
+    catalog_visible_products: 20,
+    dashboard_profit_chart_days: 7,
+    bibi_alerts_limit: 3,
+    export_csv: false,
+    whatsapp_smart_charge_tones: false
 };
 
 /**
@@ -34,7 +30,6 @@ export async function getCurrentUserProfile() {
 
     if (error) {
         console.error('Error fetching profile:', error);
-        // Fallback if profile doesn't exist yet (e.g. before trigger runs or legacy user)
         return { id: user.id, plan: 'free' };
     }
 
@@ -43,27 +38,62 @@ export async function getCurrentUserProfile() {
 
 /**
  * Checks if the user is PRO.
- * @param {object} profile - The user profile object
  */
 export function isProUser(profile) {
     return profile?.plan === 'pro';
 }
 
-/**
- * Checks if the user can add more products.
- * @param {object} profile - The user profile object
- * @param {number} currentCount - Current number of products
- */
+// ==========================================
+// Check Functions
+// ==========================================
+
 export function canAddProduct(profile, currentCount) {
     if (isProUser(profile)) return true;
-    return currentCount < PLANS.FREE.limits.products;
+    return currentCount < FREE_LIMITS.products;
 }
 
-/**
- * Checks if the user can access the Customers module.
- * @param {object} profile - The user profile object
- */
-export function canAccessCustomers(profile) {
+export function canAddPhoto(profile, currentPhotosCount) {
     if (isProUser(profile)) return true;
-    return PLANS.FREE.limits.customers;
+    return currentPhotosCount < FREE_LIMITS.product_photos;
+}
+
+export function canAddCustomer(profile, currentCount) {
+    if (isProUser(profile)) return true;
+    return currentCount < FREE_LIMITS.customers;
+}
+
+export function canAddCategory(profile, currentCount) {
+    if (isProUser(profile)) return true;
+    return currentCount < FREE_LIMITS.categories;
+}
+
+export function canRegisterSale(profile, currentMonthSalesCount) {
+    if (isProUser(profile)) return true;
+    return currentMonthSalesCount < FREE_LIMITS.monthly_sales;
+}
+
+export function canAddActiveDebt(profile, currentActiveDebtsCount) {
+    if (isProUser(profile)) return true;
+    return currentActiveDebtsCount < FREE_LIMITS.active_debts;
+}
+
+export function canShowCatalogMoreThan(profile, requestedAmount) {
+    if (isProUser(profile)) return true;
+    return requestedAmount <= FREE_LIMITS.catalog_visible_products;
+}
+
+export function canUseExport(profile) {
+    if (isProUser(profile)) return true;
+    return FREE_LIMITS.export_csv;
+}
+
+export function canUseBibiFull(profile) {
+    if (isProUser(profile)) return true;
+    // Free only gets up to `bibi_alerts_limit`
+    return false;
+}
+
+export function canUseSmartWhatsAppCharge(profile) {
+    if (isProUser(profile)) return true;
+    return FREE_LIMITS.whatsapp_smart_charge_tones;
 }

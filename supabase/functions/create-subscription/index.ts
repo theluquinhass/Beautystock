@@ -13,7 +13,13 @@ serve(async (req) => {
     }
 
     try {
-        const { userId, email } = await req.json();
+        let { userId, email } = await req.json();
+
+        // Fallback for missing user email since MercadoPago requires one
+        if (!email) {
+            email = `user_${userId}@beautystock-customer.com`;
+        }
+
         console.log(`Starting subscription creation for user: ${userId}, email: ${email}`);
 
         const supabase = createClient(
@@ -54,19 +60,20 @@ serve(async (req) => {
 
         let customerId = profile.mp_customer_id;
 
+        // Ensure we have a valid first name available in the whole function scope
+        let firstName = profile.first_name || '';
+        let lastName = profile.last_name || '';
+
+        if (!firstName) {
+            // Fallback to email prefix or default
+            firstName = email.split('@')[0].replace(/[^a-zA-Z\s]/g, '') || 'Cliente';
+        }
+
         // 2. Create/Get Customer in Mercado Pago
         if (!customerId) {
             console.log('Creating/Finding customer in Mercado Pago...');
 
             // Ensure we have a valid first name
-            let firstName = profile.first_name || '';
-            let lastName = profile.last_name || '';
-
-            if (!firstName) {
-                // Fallback to email prefix or default
-                firstName = email.split('@')[0].replace(/[^a-zA-Z\s]/g, '') || 'Cliente';
-            }
-
             console.log(`Using customer name: ${firstName} ${lastName}`);
 
             const customerData = {
@@ -106,15 +113,17 @@ serve(async (req) => {
         const subscriptionData = {
             payer_email: email,
             back_url: backUrl,
-            reason: 'BeautyStock PRO - Mensal',
+            reason: 'BeautyStock PRO - Teste Real (1 Real)',
             auto_recurring: {
                 frequency: 1,
                 frequency_type: 'months',
-                transaction_amount: 29.90,
+                transaction_amount: 1.00,
                 currency_id: 'BRL',
             },
             status: 'pending',
             external_reference: userId,
+            payer_name: firstName,
+            payer_last_name: lastName
         };
 
         const subscription = await preapprovalClient.create({ body: subscriptionData });
@@ -131,10 +140,27 @@ serve(async (req) => {
             }
         );
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error in create-subscription:', error);
+
+        let errorMessage = error.message;
+        let errorDetails = error;
+
+        // Extract detailed Mercado Pago API error if available
+        if (error.response?.data) {
+            errorMessage = error.response.data.message || 'Mercado Pago API Error';
+            errorDetails = error.response.data;
+        } else if (error.cause) {
+            errorMessage = error.cause.message || errorMessage;
+            errorDetails = error.cause;
+        } else if (error instanceof Error) {
+            errorMessage = error.message;
+        }
+
+        console.error('Detailed Error Payload:', JSON.stringify(errorDetails, null, 2));
+
         return new Response(
-            JSON.stringify({ error: error.message, stack: error.stack }),
+            JSON.stringify({ error: errorMessage, details: errorDetails }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                 status: 400,

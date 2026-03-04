@@ -5,11 +5,24 @@ import CustomerCard from '../../components/Customers/CustomerCard';
 import FAB from '../../components/Dashboard/FAB';
 import StatCard from '../../components/Dashboard/StatCard';
 import { useCustomerDebt } from '../../hooks/useCustomerDebt';
+import { usePlan } from '../../hooks/usePlan';
+import { canAddCustomer } from '../../lib/planUtils';
+import UpgradeModal from '../../components/UpgradeModal';
 
 export default function CustomersList() {
     const navigate = useNavigate();
+    const { profile, isPro, usage, limits } = usePlan();
     const { customers, loading, totalReceivables } = useCustomerDebt();
     const [searchTerm, setSearchTerm] = useState('');
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+    const handleNewCustomer = () => {
+        if (!canAddCustomer(profile, usage.customersCount)) {
+            setShowUpgradeModal(true);
+            return;
+        }
+        navigate('/clientes/novo');
+    };
 
     const filteredCustomers = customers.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -19,7 +32,14 @@ export default function CustomersList() {
 
     return (
         <div className="pb-24">
-            <h1 className="text-2xl font-bold text-gray-800 mb-4">Clientes & Fiado</h1>
+            <div className="flex items-center justify-between mb-4">
+                <h1 className="text-2xl font-bold text-gray-800">Clientes & Fiado</h1>
+                {!isPro && (
+                    <span className="text-[10px] font-bold bg-pink-100 text-pink-600 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                        {usage.customersCount}/{limits?.customers || 15} Clientes
+                    </span>
+                )}
+            </div>
 
             {/* Total Goal Card */}
             {totalReceivables > 0 && (
@@ -57,7 +77,7 @@ export default function CustomersList() {
                     <div className="text-center py-10">
                         <p className="text-gray-500">Nenhum cliente encontrado.</p>
                         <button
-                            onClick={() => navigate('/clientes/novo')}
+                            onClick={handleNewCustomer}
                             className="mt-4 text-pink-500 font-medium hover:underline"
                         >
                             Cadastrar o primeiro
@@ -66,7 +86,14 @@ export default function CustomersList() {
                 )}
             </div>
 
-            <FAB onClick={() => navigate('/clientes/novo')} label="Novo Cliente" />
+            <FAB onClick={handleNewCustomer} label="Novo Cliente" />
+
+            <UpgradeModal
+                isOpen={showUpgradeModal}
+                onClose={() => setShowUpgradeModal(false)}
+                limitText={`${limits?.customers || 15} clientes`}
+                featureName="clientes"
+            />
         </div>
     );
 }

@@ -89,7 +89,7 @@ export default function BibiPanelMobile({
                                     </>
                                 )}
 
-                                {activeTab === 'restock' && isPro && (
+                                {activeTab === 'restock' && (
                                     <>
                                         <BibiFilters
                                             periodDays={periodDays} setPeriodDays={setPeriodDays}
@@ -97,10 +97,11 @@ export default function BibiPanelMobile({
                                             sortBy={sortBy} setSortBy={setSortBy}
                                         />
                                         <BibiRestock
-                                            alerts={sortedRestockAlerts}
+                                            alerts={!isPro ? sortedRestockAlerts.slice(0, 3) : sortedRestockAlerts}
                                             strategyDays={strategyDays}
                                             shoppingList={shoppingList}
                                             onToggleList={toggleList}
+                                            isPro={isPro}
                                         />
                                     </>
                                 )}

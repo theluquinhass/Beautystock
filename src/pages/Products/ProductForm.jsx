@@ -4,8 +4,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Plus, Trash, ArrowLeft, Lock, Box, Layers, Save, Loader2, ImagePlus, X } from 'lucide-react';
 import { usePlan } from '../../hooks/usePlan';
-import { canAddProduct } from '../../lib/planUtils';
+import { canAddProduct, canAddPhoto, canAddCategory } from '../../lib/planUtils';
 import { uploadProductImage, getPublicImageUrl } from '../../lib/productImages';
+import UpgradeModal from '../../components/UpgradeModal';
 
 const CATEGORY_COLORS = [
     { value: '#ec4899', label: 'Rosa' },
@@ -20,25 +21,17 @@ export default function ProductForm() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const { profile, isPro } = usePlan();
-    const [productCount, setProductCount] = useState(0);
+    const { profile, isPro, usage, limits } = usePlan();
 
     // Image states
     const [imageFile, setImageFile] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [currentImagePath, setCurrentImagePath] = useState(null);
 
-    useEffect(() => {
-        // Check product count for limit
-        if (!id) {
-            checkLimit();
-        }
-    }, [id]);
-
-    const checkLimit = async () => {
-        const { count } = await supabase.from('products').select('*', { count: 'exact', head: true });
-        setProductCount(count || 0);
-    };
+    // Limit States
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [upgradeFeatureName, setUpgradeFeatureName] = useState('');
+    const [upgradeLimitText, setUpgradeLimitText] = useState('');
 
     const [categories, setCategories] = useState([]);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -102,6 +95,13 @@ export default function ProductForm() {
     };
 
     const handleImageChange = (e) => {
+        if (!canAddPhoto(profile, usage.photosCount) && !currentImagePath) {
+            setUpgradeFeatureName('fotos');
+            setUpgradeLimitText(`${limits?.product_photos || 30} fotos de produto`);
+            setShowUpgradeModal(true);
+            return;
+        }
+
         const file = e.target.files[0];
         if (!file) return;
 
@@ -143,37 +143,10 @@ export default function ProductForm() {
         e.preventDefault();
 
         // Guard: Check limit if creating new product
-        if (!id && !canAddProduct(profile, productCount)) {
-            toast.custom((t) => (
-                <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
-                    <div className="flex-1 w-0 p-4">
-                        <div className="flex items-start">
-                            <div className="flex-shrink-0 pt-0.5">
-                                <Lock className="h-10 w-10 text-pink-500" />
-                            </div>
-                            <div className="ml-3 flex-1">
-                                <p className="text-sm font-medium text-gray-900">
-                                    Limite Atingido!
-                                </p>
-                                <p className="mt-1 text-sm text-gray-500">
-                                    Seu plano grátis permite apenas 10 produtos.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex border-l border-gray-200">
-                        <button
-                            onClick={() => {
-                                toast.dismiss(t.id);
-                                navigate('/upgrade');
-                            }}
-                            className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-pink-600 hover:text-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-500"
-                        >
-                            Fazer Upgrade
-                        </button>
-                    </div>
-                </div>
-            ), { duration: 5000 });
+        if (!id && !canAddProduct(profile, usage.productsCount)) {
+            setUpgradeFeatureName('produtos');
+            setUpgradeLimitText(`${limits?.products || 30} produtos`);
+            setShowUpgradeModal(true);
             return;
         }
 
@@ -181,6 +154,21 @@ export default function ProductForm() {
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
+
+            if (!id && !canAddProduct(profile, usage.productsCount)) {
+                const { count } = await supabase
+                    .from('products')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('user_id', user.id);
+
+                if (!canAddProduct(profile, count)) {
+                    setLoading(false);
+                    setUpgradeFeatureName('produtos');
+                    setUpgradeLimitText(`${limits?.products || 30} produtos`);
+                    setShowUpgradeModal(true);
+                    return;
+                }
+            }
 
             const productPayload = {
                 user_id: user.id,
@@ -289,6 +277,20 @@ export default function ProductForm() {
         setIsCreatingCategory(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
+
+            const { count } = await supabase
+                .from('categories')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id);
+
+            if (!canAddCategory(profile, count)) {
+                setIsCreatingCategory(false);
+                setShowCategoryModal(false);
+                setUpgradeFeatureName('categorias');
+                setUpgradeLimitText(`${limits?.categories || 5} categorias`);
+                setShowUpgradeModal(true);
+                return;
+            }
 
             if (categories.some(c => c.name.toLowerCase() === newCategoryData.name.trim().toLowerCase())) {
                 toast.error('Categoria já existe!');
@@ -403,7 +405,15 @@ export default function ProductForm() {
                                     </select>
                                     <button
                                         type="button"
-                                        onClick={() => setShowCategoryModal(true)}
+                                        onClick={() => {
+                                            if (!canAddCategory(profile, usage.categoriesCount)) {
+                                                setUpgradeFeatureName('categorias');
+                                                setUpgradeLimitText(`${limits?.categories || 5} categorias`);
+                                                setShowUpgradeModal(true);
+                                                return;
+                                            }
+                                            setShowCategoryModal(true);
+                                        }}
                                         className="px-4 bg-pink-50 text-pink-600 border border-pink-100 rounded-xl hover:bg-pink-100 transition-colors flex items-center justify-center font-bold"
                                         title="Nova Categoria"
                                     >
@@ -602,6 +612,13 @@ export default function ProductForm() {
                     </div>
                 </div>
             )}
+
+            <UpgradeModal
+                isOpen={showUpgradeModal}
+                onClose={() => setShowUpgradeModal(false)}
+                limitText={upgradeLimitText}
+                featureName={upgradeFeatureName}
+            />
         </div>
     );
 }

@@ -9,7 +9,11 @@ import RequirePro from './components/RequirePro';
 import { Loader2 } from 'lucide-react';
 
 // Lazy Load Pages
+const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
+const TermsOfUse = lazy(() => import('./pages/TermsOfUse'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ProductList = lazy(() => import('./pages/Products/ProductList'));
 const ProductForm = lazy(() => import('./pages/Products/ProductForm'));
@@ -28,6 +32,15 @@ const CustomersList = lazy(() => import('./pages/Customers/CustomersList'));
 const CustomerFormPage = lazy(() => import('./pages/Customers/CustomerFormPage'));
 const CustomerView = lazy(() => import('./pages/Customers/CustomerView'));
 const Upgrade = lazy(() => import('./pages/Upgrade'));
+const CheckoutPro = lazy(() => import('./pages/CheckoutPro'));
+
+// Admin Pages
+const AdminRoute = lazy(() => import('./components/AdminRoute'));
+const AdminLayout = lazy(() => import('./components/AdminLayout'));
+const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
+const AdminUsers = lazy(() => import('./pages/Admin/AdminUsers'));
+const AdminSubscriptions = lazy(() => import('./pages/Admin/AdminSubscriptions'));
+const AdminPayments = lazy(() => import('./pages/Admin/AdminPayments'));
 
 const PageLoader = () => (
   <div className="h-screen flex items-center justify-center text-pink-500">
@@ -44,12 +57,16 @@ export default function App() {
             <Toaster position="top-right" />
             <Suspense fallback={<PageLoader />}>
               <Routes>
+                <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/termos" element={<TermsOfUse />} />
+                <Route path="/privacidade" element={<PrivacyPolicy />} />
                 <Route path="/c/:slug" element={<PublicCatalog />} />
 
                 <Route element={<PrivateRoute />}>
                   <Route element={<Layout />}>
-                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/produtos" element={<ProductList />} />
                     <Route path="/produtos/novo" element={<ProductForm />} />
                     <Route path="/produtos/:id" element={<ProductForm />} />
@@ -59,13 +76,22 @@ export default function App() {
                     <Route path="/catalogo" element={<CatalogSettings />} />
                     <Route path="/conta" element={<Account />} />
 
-                    {/* PRO Protected Routes */}
-                    <Route path="/clientes" element={<RequirePro><CustomersList /></RequirePro>} />
-                    <Route path="/clientes/novo" element={<RequirePro><CustomerFormPage /></RequirePro>} />
-                    <Route path="/clientes/:id" element={<RequirePro><CustomerView /></RequirePro>} />
-                    <Route path="/clientes/:id/editar" element={<RequirePro><CustomerFormPage /></RequirePro>} />
+                    <Route path="/clientes" element={<CustomersList />} />
+                    <Route path="/clientes/novo" element={<CustomerFormPage />} />
+                    <Route path="/clientes/:id" element={<CustomerView />} />
+                    <Route path="/clientes/:id/editar" element={<CustomerFormPage />} />
 
                     <Route path="/upgrade" element={<Upgrade />} />
+                    <Route path="/checkout/pro" element={<CheckoutPro />} />
+                  </Route>
+                </Route>
+
+                <Route path="/admin" element={<AdminRoute />}>
+                  <Route element={<AdminLayout />}>
+                    <Route index element={<AdminDashboard />} />
+                    <Route path="usuarios" element={<AdminUsers />} />
+                    <Route path="assinaturas" element={<AdminSubscriptions />} />
+                    <Route path="pagamentos" element={<AdminPayments />} />
                   </Route>
                 </Route>
 

@@ -1,7 +1,7 @@
 # BeautyStock - Project Context
 
-> **Last Updated:** 2026-02-26
-> **Status:** Active Development (PWA Implementation, User Authentication, & Pro Features Refinement)
+> **Last Updated:** 2026-03-03
+> **Status:** Active Development (Freemium Finalization, Stock Reliability, & Subscriptions)
 
 ## 📌 Project Overview
 **BeautyStock** is a mobile-first SaaS tailored for cosmetics and perfume resellers. It provides an intuitive, visually appealing, and "Soft & Premium" interface for inventory control, sales management, and customer relationship management, purposefully moving away from complex and sterile ERP software.
@@ -10,7 +10,8 @@
 - **Frontend Framework:** React 18 + Vite
 - **Styling:** Tailwind CSS v4 (using `@theme` variables for centralized design tokens)
 - **Icons:** Lucide React
-- **Backend/Database:** Supabase (PostgreSQL, Edge Functions, Auth, Storage)
+- **Backend/Database:** Supabase (PostgreSQL, Edge Functions, Auth, Storage, RPCs)
+- **Realtime / Async:** Supabase Realtime (Notifications), pg_cron (Scheduled tasks)
 - **Routing:** React Router DOM (v6)
 - **State Management:** React Context API (AuthContext) + Custom Hooks (`useDashboard`, `useProducts`, etc.) + Local State
 - **PWA Integration:** `vite-plugin-pwa` (Full offline support, Add to Home Screen, Custom Icons)
@@ -45,7 +46,7 @@
     - `Account.jsx`: Profile settings, plan details, support links.
 - `src/services/` & `src/hooks/`: Data fetching abstractions and state logic.
 - `src/lib/supabase.js`: Supabase client configuration.
-- `supabase/functions/`: Edge functions (e.g., `import-products`).
+- `supabase/functions/`: Edge functions (e.g., `import-products`, `mercadopago-webhook`).
 
 ## 🚀 Core Features & Modules
 
@@ -63,6 +64,7 @@
 
 ### 3. Inventory & Products (Stock Management)
 - **Product Catalog:** Image, Category, Price, Cost, SKU, and Stock level.
+- **Public Catalog:** Sharable catalog with perfectly centered Smart Banners.
 - **Variations:** Support for sizes and colors per product.
 - **Bulk Import:** Excel (`.xlsx`) upload with data mapping, preview, and backend Edge Function for upserts.
 
@@ -71,41 +73,50 @@
 - **Smart Cart:** Add items, adjust quantities with pill-shaped custom inputs.
 - **Discounts:** Apply Fixed Amount or Percentage discounts, automatically distributed proportionally across cart items.
 - **Checkout UI:** Premium design for final total calculation and confirmation.
-- **Automation:** SQL Triggers (`triggers.sql`) automatically update product stock upon sale/entry confirmation.
+- **Stock Reliability:** Uses PostgreSQL RPC (`confirm_sale`) for atomic validation, preventing negative stock sales.
 
 ### 5. Customer Relationship Management (CRM)
-- **Customer List:** Track names, contact info, and total debt (`fiado`).
+- **Customer List:** Track names, contact info, total debt (`fiado`), and delete customers when needed.
 - **Smart WhatsApp Billing (PRO):**
     - Modal to send automated charge messages.
     - 5 selectable tones: 💖 Soft, 💼 Professional, ⚡ Direct, 🔥 Urgent, 😊 Friendly.
     - Ensures device compatibility using native `api.whatsapp.com/send`.
 
-### 6. "Bot Zapzap" Integration 
+### 6. Payments, Subscriptions & Notifications
+- **MercadoPago Webhooks:** Edge function handling payment notifications for PIX and Subscription updates.
+- **PRO Plan Warnings:** Supabase Cron Job (`check-plan-expiration`) checking daily for users expiring within 2 days to dispatch in-app alerts.
+- **Notification Center:** Global in-app bell showing real-time unread alerts (`plan_expiring`).
+- **1-Click Renewal:** Direct checkout generation for PRO Plan renewals via MP Preferences.
+
+### 7. "Bot Zapzap" Integration 
 - **Automated Support:** Built-in automated messages for account support (e.g., "Olá! Estou com Problemas.. Pode me ajudar?").
 - **Backend Infrastructure:** `WhatsappModule` and `FlowsModule` set up for future Chatbot Builder expansions.
 
 ## 💎 Freemium Business Model
 - **FREE Tier:** 
-  - Limit: 10 Products maximum.
+  - Limit: 50 Products maximum, 5 Clients maximum.
+  - Limit: 3 Bibi alerts.
+  - Catalog features limited: max 20 visible products, displays "Feito com BeautyStock" footer.
+  - Locked items: CSV export, Smart WhatsApp Charge Tones (PRO only).
   - Basic dashboard analytics.
-  - Locked sections (e.g., Customers CRM, Smart WhatsApp Billing).
   - Prompts to upgrade when interacting with locked features.
 - **PRO Tier:**
-  - Unlimited products.
-  - Full access to CRM and Customer Debt Tracking.
+  - Unlimited products and unlimited clients.
+  - Full access to CRM, CSV Exports, and Customer Debt Tracking.
   - Advanced Analytics (ClientsChart, Top Debtors).
   - VIP WhatsApp Support.
   - Smart Tone selection for WhatsApp billing.
 
-## 🔄 Recent Major Updates (Late Feb 2026)
-- **PWA Transformation:** Added `vite-plugin-pwa`, generated custom app icons, and implemented installation prompts for mobile devices.
-- **Security & Flow:** Replaced magic link emails with direct OTP (One-Time Password) confirmation screen.
-- **Freemium Tweaks:** Increased Free tier product limit from 5 to 10 to improve user onboarding experience.
-- **Checkout Refactor:** Upgraded the visual hierarchy of the shopping cart, integrating proportional discounts seamlessly.
-- **Branding:** Replaced the generic Vite logo with a custom-designed, high-quality pink "B" logo across the app and HTML headers.
-- **Code Quality:** Migrated loose Supabase calls into a structured Service Layer and extracted logic into custom hooks.
+## 🔄 Recent Major Updates (Early March 2026)
+- **PRO Plan Auto-Notifications:** Built the entire Notifications engine, scheduled Edge Functions, Toast Alerts, and 2-day expiration dynamic CTA blocks.
+- **Freemium Tier Finalization:** Adjusted Free plan limits (50 products, 5 clients, 3 alerts) and enforced limits on catalog visibility and CSV exports.
+- **Stock Reliability:** Implemented DB-level RPC (`confirm_sale`) validations to prevent negative stock sales and race conditions.
+- **Payment & Webhooks:** Overhauled MercadoPago webhooks to process subscriptions, single PIX checkout, and expiration dates (`expires_at`).
+- **UI/UX Polish:** Perfected Smart Banner centering on the public catalog and added Customer Deletion functionality.
+- **PWA & Security:** Finalized PWA transition and OTP email confirmation flow.
 
-## � Next Steps & Roadmap
+## 🚀 Next Steps & Roadmap
+- Finalize MercadoPago webhook testing and edge cases.
 - Implement Push Notifications via Service Workers.
 - Finalize the visual Chatbot Builder UI in the web application.
 - Expand reporting (PDF Exports for sales/inventory).
