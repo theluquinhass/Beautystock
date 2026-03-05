@@ -41,7 +41,7 @@ export default function Signup() {
                 email,
                 password,
                 options: {
-                    emailRedirectTo: window.location.origin,
+                    emailRedirectTo: 'https://beautystockapp.com',
                     data: {
                         first_name: firstName,
                         last_name: lastName,

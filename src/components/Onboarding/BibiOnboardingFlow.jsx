@@ -50,14 +50,14 @@ export default function BibiOnboardingFlow() {
                         text="Aqui você cadastra tudo o que vende (perfumes, cremes...). O BeautyStock calcula seu lucro e avisa quando o estoque acabar."
                         stepIndex={1}
                         totalSteps={totalSteps}
-                        onNext={() => handleNext('/')}
+                        onNext={() => handleNext('/dashboard')}
                         onPrev={null}
                         onSkip={skipOnboarding}
                     />
                 );
             case 2:
                 // Make sure we are on dashboard
-                setTimeout(() => goTo('/'), 0);
+                setTimeout(() => goTo('/dashboard'), 0);
                 return (
                     <SpotlightOverlay
                         targetSelector="[data-onboarding='add-movement']"
@@ -65,7 +65,7 @@ export default function BibiOnboardingFlow() {
                         text="Este é o botão mágico! É aqui que você registra suas vendas ou entradas de mercadoria de forma rápida."
                         stepIndex={2}
                         totalSteps={totalSteps}
-                        onNext={() => handleNext('/')}
+                        onNext={() => handleNext('/dashboard')}
                         onPrev={prevTourStep}
                         onSkip={skipOnboarding}
                     />
@@ -78,7 +78,7 @@ export default function BibiOnboardingFlow() {
                         text="Seus clientes organizados por quem está devendo (Fiado). O plano PRO desbloqueia essa funcionalidade completa."
                         stepIndex={3}
                         totalSteps={totalSteps}
-                        onNext={() => handleNext('/')}
+                        onNext={() => handleNext('/dashboard')}
                         onPrev={prevTourStep}
                         onSkip={skipOnboarding}
                     />
@@ -91,7 +91,7 @@ export default function BibiOnboardingFlow() {
                         text="No plano PRO, você pode cobrar clientes pelo WhatsApp com 1 clique! Você escolhe o tom da mensagem (Soft, Direto ou Urgente) e nós enviamos."
                         stepIndex={4}
                         totalSteps={totalSteps}
-                        onNext={() => handleNext('/')}
+                        onNext={() => handleNext('/dashboard')}
                         onPrev={prevTourStep}
                         onSkip={skipOnboarding}
                     />
