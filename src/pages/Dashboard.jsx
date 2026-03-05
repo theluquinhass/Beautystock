@@ -33,7 +33,7 @@ export default function Dashboard() {
     if (loading) return <div className="h-screen flex items-center justify-center text-pink-500"><Loader2 className="animate-spin" size={32} /></div>;
 
     return (
-        <div className="pb-24 lg:pb-0">
+        <div className="pb-32 lg:pb-10">
             <div className="lg:hidden relative z-50">
                 <Header userName={userName} subtitle="Seu lucro este mês está crescendo! 🚀" />
             </div>
@@ -72,7 +72,7 @@ export default function Dashboard() {
                         <StatCard
                             title="Vendas Hoje"
                             value={stats.salesToday}
-                            subtitle="Transações"
+                            subtitle={`${stats.itemsSoldToday} unid. em ${stats.salesToday} vendas`}
                             icon={ArrowUpRight}
                         />
                     </div>
@@ -94,24 +94,32 @@ export default function Dashboard() {
 
             {/* Charts and Data Row 1 */}
             <div className="flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:gap-6 mb-6">
-                <div className="lg:col-span-8">
-                    <div className="mb-0">
+                <div className="lg:col-span-8 h-full">
+                    <div className="mb-0 h-full">
                         <ProfitChart />
                     </div>
                 </div>
-                <div className="lg:col-span-4">
+                <div className="lg:col-span-4 h-full">
                     <TopDebtorsCard />
                 </div>
             </div>
 
-            {/* Data Row 2 */}
-            <div className="flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:gap-6">
-                <div className="lg:col-span-8 flex flex-col gap-6">
+            {/* Data Row 2 - Movements & Bibi */}
+            <div className="flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:gap-6 mb-6">
+                <div className="lg:col-span-8 h-full">
                     <RecentMovements movements={recentMovements} />
+                </div>
+                <div className="lg:col-span-4 h-full">
+                    <BibiInsights />
+                </div>
+            </div>
+
+            {/* Data Row 3 - Best Sellers & Categories */}
+            <div className="flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:gap-6">
+                <div className="lg:col-span-8 h-full">
                     <BestSellers products={bestSellers} />
                 </div>
-                <div className="lg:col-span-4 flex flex-col gap-6">
-                    <BibiInsights />
+                <div className="lg:col-span-4 h-full">
                     <DashboardCategories />
                 </div>
             </div>

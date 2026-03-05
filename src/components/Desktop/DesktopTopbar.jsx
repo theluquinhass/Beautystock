@@ -6,7 +6,7 @@ export default function DesktopTopbar() {
 
     // Map paths to page titles
     const pageTitles = {
-        '/': 'Dashboard de Gestão',
+        '/dashboard': 'Dashboard de Gestão',
         '/produtos': 'Meus Produtos',
         '/clientes': 'Carteira de Clientes',
         '/movimentacoes': 'Histórico de Vendas',

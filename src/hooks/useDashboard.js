@@ -9,7 +9,8 @@ export function useDashboard() {
         profit: 0,
         lowStock: 0,
         receivables: 0,
-        salesToday: 0
+        salesToday: 0,
+        itemsSoldToday: 0
     });
     const [recentMovements, setRecentMovements] = useState([]);
     const [bestSellers, setBestSellers] = useState([]);
@@ -46,7 +47,7 @@ export function useDashboard() {
                 { data: movements },
                 { data: payments }
             ] = await Promise.all([
-                supabase.from('products').select('id, name, cost, price, variations(id, stock_quantity)').eq('user_id', user.id),
+                supabase.from('products').select('id, name, cost, price, image_path, is_active, variations(id, stock_quantity)').eq('user_id', user.id),
                 supabase.from('movements').select('*').eq('user_id', user.id),
                 supabase.from('payments').select('customer_id, amount').eq('user_id', user.id)
             ]);
@@ -55,7 +56,7 @@ export function useDashboard() {
 
             // A. Low Stock
             let lowStockCount = 0;
-            products?.forEach(p => p.variations?.forEach(v => {
+            products?.filter(p => p.is_active !== false).forEach(p => p.variations?.forEach(v => {
                 if (v.stock_quantity < 5) lowStockCount++;
             }));
 
@@ -66,6 +67,7 @@ export function useDashboard() {
             // B. Sales Today & Profit Month
             let monthlyProfit = 0;
             let salesTodayTotal = 0;
+            let itemsSoldTodayTotal = 0;
             const productSales = {};
 
             movements?.forEach(m => {
@@ -74,6 +76,7 @@ export function useDashboard() {
                 // Sales Today
                 if (m.type === 'EXIT' && isSameDay(date, now)) {
                     salesTodayTotal += 1;
+                    itemsSoldTodayTotal += m.quantity;
                 }
 
                 // Profit (Month)
@@ -113,7 +116,8 @@ export function useDashboard() {
                 profit: monthlyProfit,
                 lowStock: lowStockCount,
                 receivables: totalReceivables,
-                salesToday: salesTodayTotal
+                salesToday: salesTodayTotal,
+                itemsSoldToday: itemsSoldTodayTotal
             });
 
             const formattedRecent = recentWithNames?.map(m => ({

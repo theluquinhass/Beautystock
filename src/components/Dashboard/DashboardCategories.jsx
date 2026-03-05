@@ -60,14 +60,14 @@ export default function DashboardCategories() {
                 </div>
             ) : categories.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
-                    <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-3">
-                        <LayoutGrid size={24} />
-                    </div>
-                    <p className="text-sm font-bold text-gray-600 mb-1">Nenhuma categoria</p>
-                    <p className="text-xs text-gray-400 max-w-[200px] mb-4">Crie categorias para organizar seus produtos.</p>
+                    <LayoutGrid size={32} strokeWidth={1.5} className="text-gray-300 mb-3" />
+                    <h3 className="text-sm font-medium text-gray-500 mb-1">Sem categorias</h3>
+                    <p className="text-xs text-gray-400 max-w-[200px] mb-4">
+                        Crie categorias para organizar seus produtos.
+                    </p>
                     <button
                         onClick={() => navigate('/categorias')}
-                        className="text-xs font-bold text-pink-600 bg-pink-50 px-4 py-2 rounded-xl hover:bg-pink-100 transition-colors"
+                        className="text-[11px] font-bold uppercase tracking-wider text-pink-500 bg-pink-50 px-4 py-2 rounded-xl hover:bg-pink-100 transition-colors"
                     >
                         Criar Categoria
                     </button>

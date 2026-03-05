@@ -5,17 +5,15 @@ import { Receipt } from 'lucide-react';
 
 export default function RecentMovements({ movements = [] }) {
     return (
-        <section className="mt-6 mb-24">
+        <section className="flex flex-col h-full">
             <h2 className="text-lg font-bold text-gray-800 mb-4 px-2">Movimentações recentes</h2>
 
             {movements.length === 0 ? (
-                <div className="bg-white rounded-3xl p-8 border border-gray-100 flex flex-col items-center justify-center text-center shadow-soft">
-                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 border border-gray-100">
-                        <Receipt size={32} className="text-gray-300" />
-                    </div>
-                    <h3 className="text-gray-800 font-bold mb-1">Nenhuma venda ainda</h3>
-                    <p className="text-xs text-gray-500 max-w-[200px]">
-                        Suas vendas e reposições de estoque aparecerão aqui.
+                <div className="bg-white rounded-[32px] p-6 shadow-soft border border-gray-100 flex-1 flex flex-col items-center justify-center text-center min-h-[250px]">
+                    <Receipt size={32} strokeWidth={1.5} className="text-gray-300 mb-3" />
+                    <h3 className="text-sm font-medium text-gray-500 mb-1">Sem movimentações</h3>
+                    <p className="text-xs text-gray-400 max-w-[200px]">
+                        Nenhuma atividade registrada recentemente.
                     </p>
                 </div>
             ) : (

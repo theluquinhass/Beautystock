@@ -38,13 +38,13 @@ export function PlanProvider({ children }) {
                 { count: photosCount },
                 { count: catalogVisibleProductsCount }
             ] = await Promise.all([
-                supabase.from('products').select('*', { count: 'exact', head: true }).eq('user_id', userId),
+                supabase.from('products').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('is_active', true),
                 supabase.from('customers').select('*', { count: 'exact', head: true }).eq('user_id', userId),
                 supabase.from('categories').select('*', { count: 'exact', head: true }).eq('user_id', userId),
                 supabase.from('customers').select('*', { count: 'exact', head: true }).eq('user_id', userId).gt('debt', 0),
                 supabase.from('movements').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('type', 'sale').gte('date', firstDayOfMonth),
-                supabase.from('products').select('*', { count: 'exact', head: true }).eq('user_id', userId).not('image_path', 'is', null),
-                supabase.from('products').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('show_in_catalog', true)
+                supabase.from('products').select('*', { count: 'exact', head: true }).eq('user_id', userId).not('image_path', 'is', null).eq('is_active', true),
+                supabase.from('products').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('show_in_catalog', true).eq('is_active', true)
             ]);
 
             setUsage({

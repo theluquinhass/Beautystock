@@ -25,7 +25,7 @@ export default function TopDebtorsCard() {
     const loading = debtorsLoading;
 
     return (
-        <div className="bg-white rounded-3xl p-6 shadow-soft border border-gray-100 mb-8">
+        <div className="bg-white rounded-3xl p-6 shadow-soft border border-gray-100 h-full flex flex-col">
             <h3 className="text-lg font-bold text-gray-800 mb-4">Clientes que mais devem</h3>
 
             {loading ? (
@@ -35,12 +35,10 @@ export default function TopDebtorsCard() {
                     ))}
                 </div>
             ) : debtors.length === 0 ? (
-                <div className="bg-green-50 rounded-2xl p-6 flex flex-col items-center justify-center text-center">
-                    <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-3">
-                        <AlertCircle size={24} />
-                    </div>
-                    <p className="text-sm font-bold text-green-800 mb-1">Tudo em dia!</p>
-                    <p className="text-xs text-green-600">Nenhum cliente com dívida pendente.</p>
+                <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
+                    <AlertCircle size={32} strokeWidth={1.5} className="text-green-300 mb-2" />
+                    <p className="text-sm font-medium text-gray-500 mb-1">Tudo em dia!</p>
+                    <p className="text-xs text-gray-400">Nenhum cliente com dívida pendente.</p>
                 </div>
             ) : (
                 <div className="space-y-3">

@@ -28,11 +28,6 @@ export default function Movements() {
         <div className="pb-24">
             <div className="flex items-center justify-between mb-4">
                 <h1 className="text-2xl font-bold text-gray-800">Extrato de Movimentações</h1>
-                {!isPro && (
-                    <span className="text-[10px] font-bold bg-pink-100 text-pink-600 px-2.5 py-1 rounded-full uppercase tracking-wider whitespace-nowrap">
-                        {usage.monthlySalesCount}/{limits?.monthly_sales || 60} Vendas/Mês
-                    </span>
-                )}
             </div>
 
             <div className="flex flex-col gap-3">

@@ -12,7 +12,7 @@ export default function DesktopSidebar() {
     const { signOut } = useAuth();
 
     const navItems = [
-        { icon: Home, label: 'Dashboard', path: '/' },
+        { icon: Home, label: 'Dashboard', path: '/dashboard' },
         { icon: Package, label: 'Produtos', path: '/produtos' },
         { icon: Store, label: 'Catálogo', path: '/catalogo' },
         { icon: Users, label: 'Clientes', path: '/clientes' },
@@ -26,10 +26,10 @@ export default function DesktopSidebar() {
     };
 
     return (
-        <aside className="hidden lg:flex flex-col w-64 h-screen bg-white border-r border-gray-100 sticky top-0 flex-shrink-0">
+        <aside className="hidden lg:flex flex-col w-64 h-screen bg-white border-r border-gray-100 sticky top-0 flex-shrink-0 z-50">
             {/* Logo Area */}
             <div className="h-20 flex items-center justify-between px-6 border-b border-gray-50">
-                <Link to="/" className="flex items-center gap-2">
+                <Link to="/dashboard" className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-sm">
                         B
                     </div>

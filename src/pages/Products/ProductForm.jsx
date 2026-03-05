@@ -142,6 +142,18 @@ export default function ProductForm() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // Validate cost vs price
+        if (Number(formData.cost) > Number(formData.price)) {
+            toast.error('O custo não pode ser maior que o preço de venda!');
+            return;
+        }
+
+        // Validate min_stock
+        if (Number(formData.min_stock) < 1) {
+            toast.error('O estoque mínimo precisa ser 1 ou maior!');
+            return;
+        }
+
         // Guard: Check limit if creating new product
         if (!id && !canAddProduct(profile, usage.productsCount)) {
             setUpgradeFeatureName('produtos');

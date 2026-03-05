@@ -7,7 +7,7 @@ export default function Sidebar() {
     const { signOut } = useAuth();
 
     const links = [
-        { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+        { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { to: '/produtos', icon: Package, label: 'Produtos' },
         { to: '/catalogo', icon: Store, label: 'Catálogo' },
         { to: '/movimentacoes', icon: ArrowRightLeft, label: 'Movimentações' },

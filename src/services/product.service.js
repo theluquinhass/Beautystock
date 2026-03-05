@@ -9,6 +9,7 @@ export const productService = {
             .from('products')
             .select(`*, variations(id, name, stock_quantity), categories(id, name, color)`) // Optimized select
             .eq('user_id', user.id)
+            .eq('is_active', true)
             .order('name');
 
         if (error) throw error;
@@ -52,7 +53,7 @@ export const productService = {
     async delete(id) {
         const { error } = await supabase
             .from('products')
-            .delete()
+            .update({ is_active: false })
             .eq('id', id);
 
         if (error) throw error;

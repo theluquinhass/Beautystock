@@ -69,7 +69,7 @@ export default function CheckoutPro() {
     };
 
     return (
-        <div className="min-h-[calc(100vh-80px)] bg-pink-50 pt-10 sm:pt-12 px-4 sm:px-6 flex justify-center w-full">
+        <div className="min-h-[calc(100vh-80px)] bg-pink-50 pt-10 sm:pt-12 px-4 sm:px-6 pb-56 flex justify-center w-full">
             <div className="max-w-[720px] w-full relative flex flex-col">
 
                 {/* Header Section */}
@@ -116,8 +116,8 @@ export default function CheckoutPro() {
                         <div
                             onClick={() => setSelectedMethod('card')}
                             className={`relative p-5 rounded-2xl border-2 transition-all cursor-pointer bg-white ${selectedMethod === 'card'
-                                    ? 'border-pink-500 shadow-lg shadow-pink-100/50 ring-4 ring-pink-50/50 -translate-y-1'
-                                    : 'border-transparent shadow-sm hover:border-pink-200'
+                                ? 'border-pink-500 shadow-lg shadow-pink-100/50 ring-4 ring-pink-50/50 -translate-y-1'
+                                : 'border-transparent shadow-sm hover:border-pink-200'
                                 }`}
                         >
                             <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-3">
@@ -145,8 +145,8 @@ export default function CheckoutPro() {
                         <div
                             onClick={() => setSelectedMethod('pix')}
                             className={`relative p-5 rounded-2xl border-2 transition-all cursor-pointer bg-white ${selectedMethod === 'pix'
-                                    ? 'border-pink-500 shadow-lg shadow-pink-100/50 ring-4 ring-pink-50/50 -translate-y-1'
-                                    : 'border-transparent shadow-sm hover:border-pink-200'
+                                ? 'border-pink-500 shadow-lg shadow-pink-100/50 ring-4 ring-pink-50/50 -translate-y-1'
+                                : 'border-transparent shadow-sm hover:border-pink-200'
                                 }`}
                         >
                             <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-3">
@@ -191,8 +191,8 @@ export default function CheckoutPro() {
                         <button
                             onClick={handleCopyPix}
                             className={`w-full max-w-md py-4 rounded-xl flex items-center justify-center gap-2 font-bold transition-all border-2 ${copied
-                                    ? 'bg-green-50 text-green-600 border-green-200'
-                                    : 'bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 hover:border-pink-300'
+                                ? 'bg-green-50 text-green-600 border-green-200'
+                                : 'bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 hover:border-pink-300'
                                 }`}
                         >
                             {copied ? (

@@ -4,7 +4,7 @@ import { subDays, format, parseISO } from 'date-fns';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { usePlan } from '../hooks/usePlan';
-import { Crown, Lock } from 'lucide-react';
+import { Crown, Lock, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import UpgradeModal from './UpgradeModal';
 
@@ -100,7 +100,7 @@ export default function ProfitChart() {
     };
 
     return (
-        <div className="bg-white rounded-3xl p-6 shadow-soft border border-gray-100">
+        <div className="bg-white rounded-3xl p-6 shadow-soft border border-gray-100 h-full flex flex-col">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
                     <h3 className="text-lg font-bold text-gray-800">Crescimento de Lucro</h3>
@@ -127,6 +127,14 @@ export default function ProfitChart() {
                 {loading ? (
                     <div className="h-full flex items-center justify-center text-pink-300 animate-pulse">
                         Carregando...
+                    </div>
+                ) : data.every(d => d.total === 0) ? (
+                    <div className="h-full flex flex-col items-center justify-center text-center px-4 ml-4">
+                        <TrendingUp size={32} strokeWidth={1.5} className="text-gray-200 mb-3" />
+                        <h3 className="text-sm font-medium text-gray-500 mb-1">Sem histórico financeiro</h3>
+                        <p className="text-xs text-gray-400 max-w-[250px]">
+                            À medida que você realizar vendas, o crescimento do seu lucro aparecerá aqui.
+                        </p>
                     </div>
                 ) : (
                     <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
