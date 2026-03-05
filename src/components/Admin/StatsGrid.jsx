@@ -28,41 +28,41 @@ export default function StatsGrid({ metrics, loading }) {
     return (
         <div className="mb-8">
             {/* SaaS Top Metrics Overview */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm mb-6">
-                <div className="flex items-center gap-4 flex-1">
-                    <div className="p-2.5 bg-green-50 rounded-xl">
-                        <TrendingUp size={24} className="text-green-500" />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 sm:gap-4 bg-white p-6 sm:p-5 rounded-3xl border border-gray-100 shadow-sm mb-6">
+                <div className="flex items-center justify-between sm:justify-start gap-4 flex-1">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 sm:p-2.5 bg-green-50 rounded-xl">
+                            <TrendingUp size={20} className="text-green-500 sm:w-6 sm:h-6" />
+                        </div>
+                        <p className="text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-widest">Receita Hoje</p>
                     </div>
-                    <div>
-                        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Receita Hoje</p>
-                        <p className="text-2xl font-black text-gray-900">R$ {((metrics.revenueToday || 0)).toFixed(2)}</p>
-                    </div>
+                    <p className="text-xl sm:text-2xl font-black text-gray-900">R$ {((metrics.revenueToday || 0)).toFixed(2)}</p>
                 </div>
 
                 <div className="hidden sm:block w-px h-12 bg-gray-100"></div>
-                <div className="sm:hidden h-px w-full bg-gray-50 my-1"></div>
+                <div className="sm:hidden h-px w-full bg-gray-50 border-t border-dashed border-gray-100"></div>
 
-                <div className="flex items-center gap-4 flex-1 sm:justify-center">
-                    <div className="p-2.5 bg-purple-50 rounded-xl">
-                        <CreditCard size={24} className="text-purple-500" />
+                <div className="flex items-center justify-between sm:justify-center gap-4 flex-1">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 sm:p-2.5 bg-purple-50 rounded-xl">
+                            <CreditCard size={20} className="text-purple-500 sm:w-6 sm:h-6" />
+                        </div>
+                        <p className="text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-widest">MRR</p>
                     </div>
-                    <div>
-                        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">MRR</p>
-                        <p className="text-2xl font-black text-gray-900">R$ {((metrics.mrr || 0)).toFixed(2)}</p>
-                    </div>
+                    <p className="text-xl sm:text-2xl font-black text-gray-900">R$ {((metrics.mrr || 0)).toFixed(2)}</p>
                 </div>
 
                 <div className="hidden sm:block w-px h-12 bg-gray-100"></div>
-                <div className="sm:hidden h-px w-full bg-gray-50 my-1"></div>
+                <div className="sm:hidden h-px w-full bg-gray-50 border-t border-dashed border-gray-100"></div>
 
-                <div className="flex items-center gap-4 flex-1 sm:justify-end">
-                    <div className="p-2.5 bg-pink-50 rounded-xl">
-                        <Activity size={24} className="text-pink-500" />
+                <div className="flex items-center justify-between sm:justify-end gap-4 flex-1">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 sm:p-2.5 bg-pink-50 rounded-xl">
+                            <Activity size={20} className="text-pink-500 sm:w-6 sm:h-6" />
+                        </div>
+                        <p className="text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-widest text-left">ARPU</p>
                     </div>
-                    <div className="text-left">
-                        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">ARPU</p>
-                        <p className="text-2xl font-black text-gray-900">R$ {((metrics.arpu || 0)).toFixed(2)}</p>
-                    </div>
+                    <p className="text-xl sm:text-2xl font-black text-gray-900 text-right">R$ {((metrics.arpu || 0)).toFixed(2)}</p>
                 </div>
             </div>
 
