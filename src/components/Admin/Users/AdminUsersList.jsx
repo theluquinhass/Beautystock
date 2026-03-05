@@ -1,7 +1,7 @@
 import React from 'react';
 import { format, parseISO } from 'date-fns';
 import { MoreVertical, Crown, Calendar, CalendarX, AlertCircle, PlayCircle, Loader2 } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { cn } from '../../../lib/utils';
 import UserActionsMenu from './UserActionsMenu';
 
 export default function AdminUsersList({

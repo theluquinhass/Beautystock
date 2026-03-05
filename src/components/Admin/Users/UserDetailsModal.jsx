@@ -2,7 +2,7 @@ import React from 'react';
 import { X, Crown, Calendar, CalendarX, ZapOff, ShieldBan, Info, CreditCard } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { cn } from '../../lib/utils';
+import { cn } from '../../../lib/utils';
 
 export default function UserDetailsModal({ user, onClose, onAction }) {
     if (!user) return null;

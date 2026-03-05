@@ -1,6 +1,6 @@
 import React from 'react';
 import { Users, Crown, AlertTriangle, UserX } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { cn } from '../../../lib/utils';
 
 export default function AdminUsersKPIs({ kpis, activeFilter, onKpiClick }) {
     const cards = [
