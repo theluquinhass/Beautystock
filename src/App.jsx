@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react';
 const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const TermsOfUse = lazy(() => import('./pages/TermsOfUse'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -60,6 +61,7 @@ export default function App() {
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/termos" element={<TermsOfUse />} />
                 <Route path="/privacidade" element={<PrivacyPolicy />} />
                 <Route path="/c/:slug" element={<PublicCatalog />} />

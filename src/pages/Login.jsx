@@ -143,12 +143,7 @@ export default function Login() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <label className="block text-sm font-bold text-gray-700">Senha</label>
-                                    <button type="button" className="text-xs font-bold text-pink-600 hover:text-pink-700 hover:underline">
-                                        Esqueci minha senha
-                                    </button>
-                                </div>
+                                <label className="block text-sm font-bold text-gray-700">Senha</label>
                                 <input
                                     type="password"
                                     className="w-full bg-gray-50 border border-gray-100 text-gray-900 rounded-2xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all font-medium placeholder:text-gray-400 placeholder:font-normal hover:bg-gray-100/50"
@@ -157,6 +152,29 @@ export default function Login() {
                                     required
                                     placeholder="Sua senha"
                                 />
+                                <div className="flex justify-end pt-1">
+                                    <button 
+                                        type="button" 
+                                        onClick={async () => {
+                                            if (!email) {
+                                                toast.error('Por favor, informe seu email no campo acima para redefinir a senha.');
+                                                return;
+                                            }
+                                            try {
+                                                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                                                    redirectTo: `${window.location.origin}/reset-password`,
+                                                });
+                                                if (error) throw error;
+                                                toast.success('Email de redefinição enviado! Verifique sua caixa de entrada.');
+                                            } catch (error) {
+                                                toast.error(error.message);
+                                            }
+                                        }}
+                                        className="text-xs font-bold text-pink-600 hover:text-pink-700 hover:underline"
+                                    >
+                                        Esqueci minha senha
+                                    </button>
+                                </div>
                             </div>
 
                             <button
