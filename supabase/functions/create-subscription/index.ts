@@ -113,11 +113,11 @@ serve(async (req) => {
         const subscriptionData = {
             payer_email: email,
             back_url: backUrl,
-            reason: 'BeautyStock PRO - Teste Real (1 Real)',
+            reason: 'BeautyStock PRO',
             auto_recurring: {
                 frequency: 1,
                 frequency_type: 'months',
-                transaction_amount: 1.00,
+                transaction_amount: 29.90,
                 currency_id: 'BRL',
             },
             status: 'pending',
