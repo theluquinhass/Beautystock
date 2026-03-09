@@ -114,7 +114,7 @@ export default function CatalogSettings() {
                 store_logo_url: settings.store_logo_url,
                 hero_title: settings.hero_title.trim(),
                 hero_subtitle: settings.hero_subtitle.trim(),
-                updated_at: new Date()
+                updated_at: new Date().toISOString()
             };
 
             const { error: settingsError } = await supabase
@@ -145,6 +145,9 @@ export default function CatalogSettings() {
             toast.success('Configurações salvas!');
             setHasExistingSettings(true);
             setSettings(prev => ({ ...prev, slug: cleanSlug }));
+            
+            // Reload data to ensure everything is in sync with DB defaults/triggers
+            await loadData();
         } catch (error) {
             console.error('Error saving catalog:', error);
             toast.error('Erro ao salvar as configurações.');
