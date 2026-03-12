@@ -1,4 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { Home, Package, ArrowLeftRight, Users, Crown, User, Store } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
@@ -13,6 +14,13 @@ export default function Layout() {
     const location = useLocation();
     const { isPro } = usePlan();
     const navigate = useNavigate();
+
+    const isDashboard = location.pathname === '/dashboard';
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    const handleScroll = (e) => {
+        setIsScrolled(e.target.scrollTop > 50);
+    };
 
     const navItems = [
         { icon: Home, label: 'Início', path: '/dashboard' },
@@ -30,16 +38,22 @@ export default function Layout() {
             <DesktopSidebar />
 
             {/* Main Application Area (Takes remaining width) */}
-            <div className="flex-1 flex flex-col h-screen overflow-x-hidden relative">
+            <div 
+                className="flex-1 flex flex-col h-screen overflow-x-hidden overflow-y-auto relative"
+                onScroll={handleScroll}
+            >
 
                 {/* SaaS Desktop Topbar (Hidden on Mobile) */}
                 <DesktopTopbar />
 
                 {/* Mobile Header Upgrade Button (Floating Top Right - Hidden on Desktop) */}
-                {!isPro && (
+                {!isPro && location.pathname !== '/produtos' && (
                     <button
                         onClick={() => navigate('/upgrade')}
-                        className="lg:hidden fixed top-4 right-4 z-50 bg-gradient-to-r from-pink-500 to-rose-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1 animate-pulse"
+                        className={cn(
+                            "lg:hidden fixed top-4 right-4 z-50 bg-gradient-to-r from-pink-500 to-rose-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1 transition-opacity duration-300",
+                            (isDashboard && !isScrolled) ? "opacity-0 pointer-events-none" : "opacity-100 animate-pulse"
+                        )}
                     >
                         <Crown size={12} className="text-yellow-300 fill-yellow-300" />
                         Seja PRO

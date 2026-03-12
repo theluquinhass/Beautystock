@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { Save, Copy, Store, Eye, EyeOff, Smartphone, ExternalLink, Loader2, ArrowLeft, Settings2, ImagePlus, Trash2, Edit3 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -24,6 +24,13 @@ export default function CatalogSettings() {
 
     const [categories, setCategories] = useState([]);
     const [hasExistingSettings, setHasExistingSettings] = useState(false);
+    const [userPlan, setUserPlan] = useState('FREE');
+    const [activeProducts, setActiveProducts] = useState([]);
+
+    const visibleProductsCount = useMemo(() => {
+        const visibleCatIds = categories.filter(c => c.is_visible).map(c => c.id);
+        return activeProducts.filter(p => visibleCatIds.includes(p.category_id)).length;
+    }, [categories, activeProducts]);
 
     useEffect(() => {
         loadData();
@@ -53,6 +60,28 @@ export default function CatalogSettings() {
                     hero_subtitle: catSettings.hero_subtitle || ''
                 });
                 setHasExistingSettings(true);
+            }
+
+            // Fetch profile plan
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('plan')
+                .eq('id', user.id)
+                .single();
+                
+            if (profile) {
+                setUserPlan(profile.plan?.toUpperCase() || 'FREE');
+            }
+
+            // Fetch products to count visibility
+            const { data: products } = await supabase
+                .from('products')
+                .select('id, category_id')
+                .eq('user_id', user.id)
+                .eq('is_active', true);
+                
+            if (products) {
+                setActiveProducts(products);
             }
 
             // Fetch categories and their catalog visibility
@@ -204,7 +233,7 @@ export default function CatalogSettings() {
     const catalogUrl = `${window.location.origin}/c/${settings.slug}`;
 
     return (
-        <div className="pb-24 w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 sm:mt-6">
+        <div className="pb-48 lg:pb-32 w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 sm:mt-6">
             <div className="flex items-center gap-3 mb-6 w-full">
                 <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
                     <ArrowLeft size={24} />
@@ -249,6 +278,63 @@ export default function CatalogSettings() {
                         </div>
                     )}
                 </div>
+            </div>
+
+            {/* Plan Status Banner */}
+            <div className={`w-full mb-8 rounded-[24px] p-6 lg:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-soft border ${userPlan === 'PRO' ? 'bg-gradient-to-r from-gray-900 to-black border-gray-800' : 'bg-white border-pink-100'}`}>
+                {userPlan === 'PRO' ? (
+                    <>
+                        <div className="absolute right-0 top-0 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+                        <div className="relative z-10 text-center md:text-left flex-1">
+                            <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+                                <span className="text-pink-400 font-bold tracking-widest text-sm uppercase">Plano Pro • Ativo</span>
+                                <div className="px-2.5 py-1 bg-pink-500/20 text-pink-300 text-xs font-black rounded-full border border-pink-500/30">ILIMITADO</div>
+                            </div>
+                            <h3 className="text-2xl font-black text-white mb-2">Seu catálogo opera sem limites!</h3>
+                            <p className="text-gray-400 font-medium">Exiba todos os seus produtos com uma aparência 100% profissional e sem marcas do sistema.</p>
+                        </div>
+                        <div className="relative z-10 w-full md:w-auto">
+                            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/10 text-center min-w-[180px]">
+                                <span className="block text-4xl font-black text-white mb-1">{visibleProductsCount}</span>
+                                <span className="block text-sm font-bold text-gray-400">Produtos Visíveis</span>
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="relative z-10 flex-1 text-center md:text-left">
+                           <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+                                <span className="text-pink-600 font-bold tracking-widest text-sm uppercase">Plano Free</span>
+                                <div className="px-2.5 py-1 bg-red-50 text-red-600 text-xs font-black rounded-full border border-red-100 flex items-center gap-1">Limite: 20 Produtos</div>
+                            </div>
+                            <h3 className="text-2xl font-black text-gray-900 mb-2">Desbloqueie seu catálogo completo</h3>
+                            <p className="text-gray-500 font-medium mb-5">No plano grátis, apenas os primeiros 20 produtos ficam visíveis online e o catálogo exibe marca d'água.</p>
+                            
+                            <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-3">
+                                <button type="button" onClick={() => navigate('/upgrade')} className="w-full sm:w-auto bg-gray-900 hover:bg-black text-white font-bold px-6 py-3 rounded-xl transition-all shadow-sm">
+                                    Liberar catálogo Pro
+                                </button>
+                                <button type="button" onClick={() => navigate('/upgrade')} className="text-sm font-bold text-gray-500 hover:text-gray-900 px-4 py-2 transition-all">
+                                    Ver benefícios
+                                </button>
+                            </div>
+                        </div>
+                        <div className="relative z-10 w-full md:w-auto flex flex-col items-center gap-3 text-center">
+                           {visibleProductsCount > 20 ? (
+                               <div className="bg-red-50 rounded-2xl p-5 border border-red-100 text-center w-full sm:min-w-[180px]">
+                                   <div className="text-red-500 font-bold mb-1"><span className="text-4xl font-black">20</span><span className="text-lg text-red-400"> / {visibleProductsCount}</span></div>
+                                   <span className="block text-sm font-bold text-red-600/80">Exibidos online</span>
+                                   <span className="block text-xs text-red-500 mt-2 font-medium bg-red-100 py-1.5 px-2 rounded-lg">{visibleProductsCount - 20} ocultos (Limite Free)</span>
+                               </div>
+                           ) : (
+                                <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100 text-center w-full sm:min-w-[180px]">
+                                   <div className="text-gray-900 font-bold mb-1"><span className="text-4xl font-black">{visibleProductsCount}</span><span className="text-lg text-gray-400"> / 20</span></div>
+                                   <span className="block text-sm font-bold text-gray-500">Exibidos online</span>
+                               </div>
+                           )}
+                        </div>
+                    </>
+                )}
             </div>
 
             <form onSubmit={handleSave} className="space-y-8 w-full">
@@ -481,7 +567,7 @@ export default function CatalogSettings() {
                 </div>
 
                 {/* Footer Fix Save Button */}
-                <div className="sticky bottom-4 z-40 bg-white/80 backdrop-blur-lg p-4 rounded-3xl shadow-lg border border-gray-100 mt-6 animate-enter">
+                <div className="sticky bottom-20 lg:bottom-4 z-40 bg-white/80 backdrop-blur-lg p-4 rounded-3xl shadow-lg border border-gray-100 mt-6 animate-enter">
                     <button
                         type="submit"
                         disabled={saving}

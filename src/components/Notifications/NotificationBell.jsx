@@ -162,7 +162,15 @@ export default function NotificationBell({ align = 'right' }) {
             </button>
 
             {isOpen && (
-                <div className={`absolute ${align === 'left' ? 'left-0' : '-right-2 sm:right-0'} mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200`}>
+                <div className={`
+                    fixed sm:absolute z-50
+                    top-20 sm:top-full sm:mt-2
+                    left-1/2 sm:left-auto ${align === 'left' ? 'sm:left-0' : 'sm:right-0'}
+                    -translate-x-1/2 sm:translate-x-0
+                    w-[calc(100vw-2rem)] sm:w-80 max-w-sm
+                    bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden
+                    animate-in fade-in slide-in-from-top-2 duration-200
+                `}>
                     <div className="flex justify-between items-center px-4 py-3 border-b border-gray-50 bg-gray-50/50">
                         <h3 className="font-bold text-gray-800 text-sm">Notificações</h3>
                         {unreadCount > 0 && (
@@ -235,13 +243,6 @@ export default function NotificationBell({ align = 'right' }) {
                             </div>
                         )}
                     </div>
-                    {notifications.length > 0 && (
-                        <div className="p-2 border-t border-gray-50 bg-gray-50/50 text-center">
-                            <button className="text-xs text-gray-500 hover:text-gray-800 font-medium w-full py-1">
-                                Fechar
-                            </button>
-                        </div>
-                    )}
                 </div>
             )}
         </div>

@@ -44,6 +44,10 @@ export default function Upgrade() {
                             <Check size={18} className="text-green-500 mr-2 flex-shrink-0" />
                             <span>Até 5 clientes (CRM)</span>
                         </li>
+                        <li className="flex items-center text-gray-600 text-sm">
+                            <Check size={18} className="text-green-500 mr-2 flex-shrink-0" />
+                            <span>Catálogo com 20 Produtos</span>
+                        </li>
                         <li className="flex items-center text-gray-400 text-sm">
                             <X size={18} className="text-gray-300 mr-2 flex-shrink-0" />
                             <span>Vendas no Fiado</span>
@@ -82,6 +86,14 @@ export default function Upgrade() {
                         <li className="flex items-center text-gray-700 font-medium">
                             <div className="bg-green-100 p-1 rounded-full mr-3"><Check size={14} className="text-green-600" /></div>
                             <span>Clientes Ilimitados</span>
+                        </li>
+                        <li className="flex items-center text-gray-700 font-medium">
+                            <div className="bg-green-100 p-1 rounded-full mr-3"><Check size={14} className="text-green-600" /></div>
+                            <span>Catálogo Ilimitado</span>
+                        </li>
+                        <li className="flex items-center text-gray-700 font-medium">
+                            <div className="bg-green-100 p-1 rounded-full mr-3"><Check size={14} className="text-green-600" /></div>
+                            <span>Catálogo Sem Marca d'água</span>
                         </li>
                         <li className="flex items-center text-gray-700 font-medium">
                             <div className="bg-green-100 p-1 rounded-full mr-3"><Check size={14} className="text-green-600" /></div>

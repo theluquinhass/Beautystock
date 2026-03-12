@@ -5,12 +5,22 @@ import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
+// Formata CPF visualmente: 123.456.789-00
+function formatCPF(value) {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    return digits
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+}
+
 export default function Signup() {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
+    const [cpf, setCpf] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showSuccess, setShowSuccess] = useState(false);
     const navigate = useNavigate();
@@ -25,8 +35,13 @@ export default function Signup() {
         setLoading(true);
 
         try {
-            if (!email || !password || !firstName || !lastName || !confirmPassword) {
+            if (!email || !password || !firstName || !lastName || !cpf || !confirmPassword) {
                 throw new Error('Preencha todos os campos obrigatórios.');
+            }
+
+            const cleanCPF = cpf.replace(/\D/g, '');
+            if (cleanCPF.length !== 11 || /^(\d)\1+$/.test(cleanCPF)) {
+                throw new Error('CPF inválido. Verifique e tente novamente.');
             }
 
             if (password.length < 6) {
@@ -45,6 +60,7 @@ export default function Signup() {
                     data: {
                         first_name: firstName,
                         last_name: lastName,
+                        cpf: cpf.replace(/\D/g, ''),
                     }
                 }
             });
@@ -124,6 +140,20 @@ export default function Signup() {
                                 placeholder="Seu sobrenome"
                             />
                         </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="block text-sm font-bold text-gray-700">CPF</label>
+                        <input
+                            type="text"
+                            inputMode="numeric"
+                            className="w-full bg-gray-50 border border-gray-100 text-gray-900 rounded-2xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all font-medium placeholder:text-gray-400 focus:bg-white hover:bg-gray-100/50"
+                            value={cpf}
+                            onChange={(e) => setCpf(formatCPF(e.target.value))}
+                            required
+                            maxLength={14}
+                            placeholder="000.000.000-00"
+                        />
                     </div>
 
                     <div className="space-y-1.5">

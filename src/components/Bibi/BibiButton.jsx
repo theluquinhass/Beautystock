@@ -11,8 +11,9 @@ export default function BibiButton() {
     const [isOpen, setIsOpen] = useState(false);
     const location = useLocation();
 
-    // Hide on Account page
-    if (location.pathname === '/conta') return null;
+    // Hide on specific pages (checking if route starts with the path to catch sub-routes and params)
+    const hiddenRoutes = ['/conta', '/upgrade', '/checkout', '/checkout-pro'];
+    if (hiddenRoutes.some(route => location.pathname.startsWith(route))) return null;
 
     const handleClick = () => {
         setIsOpen(!isOpen);
@@ -38,7 +39,7 @@ export default function BibiButton() {
             {/* Render the Panel */}
             <BibiPanel isOpen={isOpen} onClose={() => setIsOpen(false)} />
 
-            <style jsx>{`
+            <style>{`
                 @keyframes pulse-soft {
                     0%, 100% {
                         box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.4);

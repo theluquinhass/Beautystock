@@ -14,21 +14,25 @@ export default function CheckoutPro() {
     // Transparent PIX State
     const [pixData, setPixData] = useState(null); // { qrCode, qrCodeBase64, paymentId }
     const [copied, setCopied] = useState(false);
+    const [paymentSuccess, setPaymentSuccess] = useState(false);
 
     // Polling for PIX payment success
     useEffect(() => {
         let interval;
-        if (pixData?.paymentId && !isPro) {
+        if (pixData?.paymentId && !isPro && !paymentSuccess) {
             interval = setInterval(async () => {
                 const { data: profile } = await supabase.from('profiles').select('plan').single();
                 if (profile?.plan === 'pro') {
-                    // Force a reload or navigation to let the app know
-                    window.location.href = '/dashboard';
+                    setPaymentSuccess(true);
+                    // Redirect after showing success message
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 4000);
                 }
             }, 5000); // Check every 5 seconds
         }
         return () => clearInterval(interval);
-    }, [pixData, isPro]);
+    }, [pixData, isPro, paymentSuccess]);
 
     if (isPro) {
         // Redireciona se já for PRO, mas mostra mensagem suave
@@ -54,7 +58,7 @@ export default function CheckoutPro() {
                 setLoading(false);
             }
         } catch (error) {
-            console.error("Detailed Subscription Error:", error);
+            console.error("Detailed Subscription Error Object:", error);
             alert(`Erro ao iniciar pagamento: ${error.message || 'Tente novamente.'}`);
             setLoading(false);
         }
@@ -69,7 +73,7 @@ export default function CheckoutPro() {
     };
 
     return (
-        <div className="min-h-[calc(100vh-80px)] bg-pink-50 pt-10 sm:pt-12 px-4 sm:px-6 pb-56 flex justify-center w-full">
+        <div className="min-h-[calc(100vh-80px)] bg-pink-50 pt-10 sm:pt-12 px-4 sm:px-6 pb-40 lg:pb-32 flex justify-center w-full">
             <div className="max-w-[720px] w-full relative flex flex-col">
 
                 {/* Header Section */}
@@ -83,11 +87,13 @@ export default function CheckoutPro() {
                 </div>
 
                 <div className="text-center w-full mb-8 mt-6">
-                    <div className="bg-white/50 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-white shadow-soft">
-                        <Crown size={32} className="text-pink-500 drop-shadow-sm" />
-                    </div>
+                    {!paymentSuccess && (
+                        <div className="bg-white/50 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-white shadow-soft">
+                            <Crown size={32} className="text-pink-500 drop-shadow-sm" />
+                        </div>
+                    )}
 
-                    {!pixData ? (
+                    {!paymentSuccess && !pixData && (
                         <>
                             <h1 className="text-3xl sm:text-4xl font-black text-gray-800 tracking-tight leading-tight mb-3">
                                 Escolha como quer assinar
@@ -96,7 +102,9 @@ export default function CheckoutPro() {
                                 Você vai desbloquear produtos e clientes ilimitados, fiado e relatórios profissionais.
                             </p>
                         </>
-                    ) : (
+                    )}
+                    
+                    {!paymentSuccess && pixData && (
                         <>
                             <h1 className="text-3xl sm:text-4xl font-black text-gray-800 tracking-tight leading-tight mb-3">
                                 Finalize seu Pagamento
@@ -109,7 +117,23 @@ export default function CheckoutPro() {
                 </div>
 
                 {/* Main Content Area */}
-                {!pixData ? (
+                {paymentSuccess ? (
+                    <div className="w-full bg-white rounded-3xl p-8 sm:p-10 shadow-xl shadow-pink-100/50 border border-green-100 text-center flex flex-col items-center animate-fade-in transform transition-all scale-100">
+                        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 animate-bounce">
+                            <CheckCircle2 size={48} className="text-green-500" />
+                        </div>
+                        <h2 className="text-3xl font-black text-gray-800 mb-4 tracking-tight">
+                            Pagamento Aprovado! 🎉
+                        </h2>
+                        <p className="text-gray-600 text-lg mb-8 max-w-sm">
+                            Muito obrigado! Seu plano BeautyStock PRO foi ativado com sucesso.
+                        </p>
+                        <div className="flex items-center gap-2 text-sm text-gray-500 font-medium bg-gray-50 px-4 py-2 rounded-full">
+                            <Loader2 size={16} className="animate-spin" />
+                            Preparando seu novo painel...
+                        </div>
+                    </div>
+                ) : !pixData ? (
                     <div className="w-full space-y-4">
 
                         {/* CARTAO */}
@@ -211,8 +235,8 @@ export default function CheckoutPro() {
             </div>
 
             {/* Sticky Bottom Action (only show if not in PIX qr code view) */}
-            {!pixData && (
-                <div className="fixed bottom-0 pb-6 pt-4 z-50 flex justify-center backdrop-blur-md bg-pink-50/90 border-t border-pink-100/50"
+            {!pixData && !paymentSuccess && (
+                <div className="fixed bottom-0 pb-24 lg:pb-6 pt-4 z-40 flex justify-center backdrop-blur-md bg-pink-50/90 border-t border-pink-100/50"
                     style={{ width: '100%', maxWidth: '720px' }}>
                     <div className="w-full px-4 sm:px-0">
                         <button

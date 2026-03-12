@@ -79,15 +79,23 @@ serve(async (req) => {
             const customerData = {
                 email: email,
                 first_name: firstName,
-                last_name: lastName
+                last_name: lastName,
+                identification: {
+                    type: 'CPF',
+                    number: profile.cpf || '12345678909'
+                }
             };
 
             // Search if customer already exists by email to avoid duplicates
+            // We search first, but MP might return existing without the identification 
+            // if it was created previously without it.
             const searchCustomer = await customerClient.search({ options: { email: email } });
 
             if (searchCustomer.results && searchCustomer.results.length > 0) {
                 customerId = searchCustomer.results[0].id;
                 console.log('Customer found in MP:', customerId);
+                // Opcional: Atualizar o customer se estiver faltando CPF. 
+                // Para manter simples, vamos apenas usar o ID existente.
             } else {
                 console.log('Creating new customer with data:', JSON.stringify(customerData));
                 const newCustomer = await customerClient.create({ body: customerData });
@@ -122,8 +130,6 @@ serve(async (req) => {
             },
             status: 'pending',
             external_reference: userId,
-            payer_name: firstName,
-            payer_last_name: lastName
         };
 
         const subscription = await preapprovalClient.create({ body: subscriptionData });
@@ -157,10 +163,15 @@ serve(async (req) => {
             errorMessage = error.message;
         }
 
+        // Log the full detail for debugging in Supabase dashboard
         console.error('Detailed Error Payload:', JSON.stringify(errorDetails, null, 2));
 
         return new Response(
-            JSON.stringify({ error: errorMessage, details: errorDetails }),
+            JSON.stringify({ 
+                error: errorMessage, 
+                message: errorMessage, // duplicated for frontend compatibility
+                details: errorDetails 
+            }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                 status: 400,

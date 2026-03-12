@@ -109,13 +109,26 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    const errorMsg = error.response?.data || error.message || error;
-    console.error('CRITICAL MP ERROR:', JSON.stringify(errorMsg));
+    console.error('CRITICAL MP ERROR:', error);
+    
+    let errorMsg = 'Erro ao gerar checkout.';
+    if (error.response?.data?.message) {
+         errorMsg = error.response.data.message;
+    } else if (error.message) {
+         errorMsg = error.message;
+    } else if (typeof error === 'string') {
+         errorMsg = error;
+    }
+
     return new Response(
-      JSON.stringify({ error: errorMsg, message: "Debug Payload" }),
+      JSON.stringify({ 
+        success: false,
+        error: errorMsg, 
+        details: error.response?.data || error
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 400, // Important: Always returning JSON now for error reading
       }
     );
   }

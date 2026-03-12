@@ -57,7 +57,7 @@ export default function ProductList() {
     if (loading) return <div className="h-screen flex items-center justify-center text-pink-500"><Loader2 className="animate-spin" size={32} /></div>;
 
     return (
-        <div className="pb-24">
+        <div className="pb-36 sm:pb-24 flex flex-col min-h-full">
             <div className="flex items-center justify-between mb-4">
                 <h1 className="text-2xl font-bold text-gray-800">Meus Produtos</h1>
                 <div className="flex items-center gap-2">

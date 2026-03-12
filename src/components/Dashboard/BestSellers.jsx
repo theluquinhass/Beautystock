@@ -42,13 +42,13 @@ export default function BestSellers({ products = [] }) {
                         <div
                             key={product.id}
                             className={cn(
-                                "relative min-w-[150px] max-w-[150px] p-2 bg-white rounded-3xl border border-pink-50",
+                                "relative min-w-[260px] max-w-[260px] p-6 bg-white rounded-[40px] border border-pink-50",
                                 "shadow-soft hover:shadow-lg transition-all snap-center flex flex-col group"
                             )}
                         >
                             {/* Top Ranking Badge */}
                             <div className="absolute top-3 left-3 z-10">
-                                <span className="flex items-center justify-center bg-white/90 backdrop-blur-sm text-[10px] font-black w-6 h-6 rounded-full shadow-sm text-gray-700 border border-white/50">
+                                <span className="flex items-center justify-center bg-white/90 backdrop-blur-sm text-[12px] font-black w-7 h-7 rounded-full shadow-sm text-gray-700 border border-white/50">
                                     {index + 1}
                                 </span>
                             </div>
@@ -61,7 +61,7 @@ export default function BestSellers({ products = [] }) {
                                 <img
                                     src={getPublicImageUrl(product.image_path, product.name)}
                                     alt={product.name}
-                                    className="absolute inset-0 w-full h-full object-cover rounded-2xl opacity-0 transition-opacity duration-500 z-10"
+                                    className="absolute inset-0 w-full h-full object-cover rounded-[24px] opacity-0 transition-opacity duration-500 z-10"
                                     onLoad={(e) => e.target.classList.remove('opacity-0')}
                                 />
 
@@ -71,7 +71,7 @@ export default function BestSellers({ products = [] }) {
 
                             {/* Product Info */}
                             <div className="px-1 pb-1 flex flex-col flex-1">
-                                <h3 className="text-[13px] font-bold text-gray-800 leading-tight line-clamp-2 mb-2 group-hover:text-pink-600 transition-colors">
+                                <h3 className="text-[16px] font-bold text-gray-800 leading-tight line-clamp-2 mb-4 group-hover:text-pink-600 transition-colors">
                                     {product.name}
                                 </h3>
 
@@ -79,9 +79,9 @@ export default function BestSellers({ products = [] }) {
                                 <div className="mt-auto" />
 
                                 {/* Popularity Indicator */}
-                                <div className="inline-flex items-center gap-1 bg-rose-50 px-2 py-1 rounded-lg border border-rose-100/50 self-start">
-                                    <Flame size={12} className="text-rose-500 fill-rose-500/20" />
-                                    <span className="text-[10px] font-black text-rose-600 tracking-tight">
+                                <div className="inline-flex items-center gap-2 bg-rose-50 px-4 py-2 rounded-2xl border border-rose-100/50 self-start">
+                                    <Flame size={16} className="text-rose-500 fill-rose-500/20" />
+                                    <span className="text-[12px] font-black text-rose-600 tracking-tight">
                                         {product.soldCount} VENDIDOS
                                     </span>
                                 </div>

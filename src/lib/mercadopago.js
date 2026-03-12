@@ -23,25 +23,28 @@ export async function startProCheckout() {
             body: {
                 userId: user.id,
                 email: user.email
-            },
-            headers: {
-                Authorization: `Bearer ${session.access_token}`
             }
         });
 
         if (error) {
-            // Try to parse the Edge Function error response body which contains the true Mercado Pago API error
+            console.error('Subscription invoke error:', error);
             let finalMessage = error.message;
-            if (error.context && error.context.json) {
+            
+            // Try to extract specific error message from the response body
+            if (error.context && typeof error.context.json === 'function') {
                 try {
-                    const errorBody = await error.context.json();
-                    if (errorBody && errorBody.error) {
-                        finalMessage = typeof errorBody.error === 'string' ? errorBody.error : JSON.stringify(errorBody.error);
+                    const body = await error.context.json();
+                    if (body && (body.message || body.error)) {
+                        finalMessage = body.message || (typeof body.error === 'string' ? body.error : JSON.stringify(body.error));
                     }
                 } catch (e) {
-                    // ignore json parsing error
+                    console.warn('Could not parse error response body:', e);
                 }
+            } else if (error.details && typeof error.details === 'object') {
+                // Some versions of supabase-js put the error body here
+                finalMessage = error.details.message || error.details.error || finalMessage;
             }
+            
             throw new Error(finalMessage);
         }
 
@@ -73,15 +76,28 @@ export const startProTransparentPix = async () => {
             body: {
                 userId: user.id,
                 email: user.email
-            },
-            headers: {
-                Authorization: `Bearer ${session.access_token}`
             }
         });
 
         if (error) {
             console.error("Function error details:", error);
-            throw new Error(error.message || 'Erro ao comunicar com o servidor de pagamento');
+            let finalMessage = error.message;
+
+            // Try to extract specific error message from the response body
+            if (error.context && typeof error.context.json === 'function') {
+                try {
+                    const body = await error.context.json();
+                    if (body) {
+                        finalMessage = body.error || body.message || (body.details && body.details.message) || finalMessage;
+                    }
+                } catch (e) {
+                    console.warn('Could not parse error response body:', e);
+                }
+            } else if (error.details && typeof error.details === 'object') {
+                finalMessage = error.details.message || error.details.error || finalMessage;
+            }
+
+            throw new Error(finalMessage);
         }
 
         if (!data?.success) {
@@ -124,26 +140,24 @@ export const startProPixCheckout = async () => {
             body: {
                 userId: user.id,
                 email: user.email
-            },
-            headers: {
-                Authorization: `Bearer ${session.access_token}`
             }
         });
 
         if (error) {
-            console.error('Padrão Error invoking edge function:', error);
-            console.log('Error context:', error.context);
+            console.error('Pix Checkout invoke error:', error);
             let finalMessage = error.message;
 
-            try {
-                if (error.context && error.context.json) {
-                    const jsonContext = await error.context.json();
-                    if (jsonContext.error) {
-                        finalMessage = jsonContext.error;
+            if (error.context && typeof error.context.json === 'function') {
+                try {
+                    const body = await error.context.json();
+                    if (body) {
+                        finalMessage = body.error || body.message || (body.details && body.details.message) || finalMessage;
                     }
+                } catch (e) {
+                    console.warn('Could not parse error response body:', e);
                 }
-            } catch (parseError) {
-                console.warn('Could not parse error response:', parseError);
+            } else if (error.details && typeof error.details === 'object') {
+                finalMessage = error.details.message || error.details.error || finalMessage;
             }
 
             throw new Error(finalMessage);
