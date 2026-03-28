@@ -3,9 +3,9 @@ import { ShieldCheck, Zap, Heart } from 'lucide-react';
 
 export default function SocialProof() {
     return (
-        <section className="py-8 bg-white border-y border-gray-100">
+        <section className="py-6 sm:py-8 bg-white border-y border-gray-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex flex-col items-center justify-center gap-6 md:flex-row md:justify-around text-center md:text-left">
+                <div className="flex flex-col items-center justify-center gap-4 sm:gap-6 md:flex-row md:justify-around text-center md:text-left">
 
                     <div className="flex items-center gap-3">
                         <div className="flex -space-x-3">
@@ -16,9 +16,9 @@ export default function SocialProof() {
                                 </div>
                             ))}
                         </div>
-                        <p className="font-bold text-gray-800 flex flex-col justify-center">
+                        <p className="font-bold text-[13px] sm:text-base text-gray-800 flex flex-col justify-center">
                             + de 10.000 revendedoras
-                            <span className="text-sm text-gray-500 font-medium">organizando o estoque</span>
+                            <span className="text-[11px] sm:text-sm text-gray-500 font-medium">organizando o estoque</span>
                         </p>
                     </div>
 
@@ -28,9 +28,9 @@ export default function SocialProof() {
                         <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
                             <ShieldCheck size={20} className="text-amber-600" />
                         </div>
-                        <p className="font-bold text-gray-800 flex flex-col justify-center">
+                        <p className="font-bold text-[13px] sm:text-base text-gray-800 flex flex-col justify-center">
                             Evite prejuízo
-                            <span className="text-sm text-gray-500 font-medium">Economize tempo e dinheiro</span>
+                            <span className="text-[11px] sm:text-sm text-gray-500 font-medium">Tempo e dinheiro</span>
                         </p>
                     </div>
 
@@ -40,9 +40,9 @@ export default function SocialProof() {
                         <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
                             <Zap size={20} className="text-green-600" />
                         </div>
-                        <p className="font-bold text-gray-800 flex flex-col justify-center">
+                        <p className="font-bold text-[13px] sm:text-base text-gray-800 flex flex-col justify-center">
                             Vendas rápidas
-                            <span className="text-sm text-gray-500 font-medium">Pedidos direto no WhatsApp</span>
+                            <span className="text-[11px] sm:text-sm text-gray-500 font-medium">Via WhatsApp</span>
                         </p>
                     </div>
 

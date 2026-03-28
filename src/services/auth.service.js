@@ -14,8 +14,18 @@ export const authService = {
     },
 
     async signOut() {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
+        const { error } = await supabase.auth.signOut({ scope: 'global' });
+        
+        // Sempre limpar storage local por segurança
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        if (error) {
+            console.warn('[AUTH] Session already invalidated or network error:', error.message);
+        }
+        
+        // Força um redirect hard em vez de confiar apenas no react-router para garantir a limpeza do React Tree
+        window.location.href = '/login';
     },
 
     onAuthStateChange(callback) {

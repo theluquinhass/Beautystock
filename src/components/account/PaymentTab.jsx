@@ -4,7 +4,6 @@ import { toast } from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { cn } from '../../lib/utils';
 import { CancelSubscriptionModal } from './CancelSubscriptionModal';
-
 import { useNavigate } from 'react-router-dom';
 
 export function PaymentTab({ isPro, user, formData }) {
@@ -12,44 +11,32 @@ export function PaymentTab({ isPro, user, formData }) {
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
     const [isRenewing, setIsRenewing] = useState(false);
-
-    // Mock data for UI presentation as per requirements
-    const subscriptionStatus = isPro ? 'active' : 'inactive'; // active, cancelled, past_due
-    const planValue = 'R$ 29,90/mês';
-    const renewalDate = formData?.expires_at ? new Date(formData.expires_at) : new Date();
-    renewalDate.setDate(renewalDate.getDate() + 30); // Mock next renewal
-    
-    const mockCard = {
-        brand: 'Mastercard',
-        last4: '4321',
-        expiry: '12/28'
-    };
-
-    // Real payment history from Mercado Pago
     const [paymentHistory, setPaymentHistory] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(false);
 
+    const subscriptionStatus = isPro ? 'active' : 'inactive';
+    const planValue = 'R$ 29,90/mês';
+    const renewalDate = formData?.expires_at ? new Date(formData.expires_at) : new Date();
+    renewalDate.setDate(renewalDate.getDate() + 30);
+    const mockCard = { brand: 'Mastercard', last4: '4321', expiry: '12/28' };
+
     useEffect(() => {
-        if (isPro && user?.id) {
-            fetchPaymentHistory();
-        }
+        if (isPro && user?.id) fetchPaymentHistory();
     }, [isPro, user]);
 
     const fetchPaymentHistory = async () => {
         try {
             setHistoryLoading(true);
-            const { data, error } = await supabase.functions.invoke('list-payments', {
-                body: { userId: user.id }
-            });
+            const { data, error } = await supabase.functions.invoke('list-payments', { body: { userId: user.id } });
+
+            console.log('[DEBUG] list-payments response:', { data, error });
 
             if (error) {
-                console.error('Error fetching payment history:', error);
-                return;
+                console.error('[DEBUG] Edge function error:', error);
+                // toast.error(`Erro ao carregar pagamentos: ${error.message || 'Desconhecido'}`);
             }
 
-            if (data?.payments) {
-                setPaymentHistory(data.payments);
-            }
+            if (!error && data?.payments) setPaymentHistory(data.payments);
         } catch (err) {
             console.error('Failed to load payment history:', err);
         } finally {
@@ -61,133 +48,110 @@ export function PaymentTab({ isPro, user, formData }) {
         try {
             setIsRenewing(true);
             const toastId = toast.loading('Gerando pagamento...');
-            const { data, error } = await supabase.functions.invoke('create-pro-renewal-preference', {
-                body: { userId: user.id, email: user.email }
-            });
-
+            const { data, error } = await supabase.functions.invoke('create-pro-renewal-preference', { body: { userId: user.id, email: user.email } });
             if (error) throw error;
-
             toast.dismiss(toastId);
-            if (data?.init_point) {
-                window.location.href = data.init_point;
-            }
-        } catch (err) {
-            console.error(err);
-            toast.error('Erro ao gerar renovação');
-        } finally {
-            setIsRenewing(false);
-        }
+            if (data?.init_point) window.location.href = data.init_point;
+        } catch { toast.error('Erro ao gerar renovação'); }
+        finally { setIsRenewing(false); }
     };
 
     const handleCancel = async () => {
         try {
             setIsCancelling(true);
-            // Simulating API call
             await new Promise(resolve => setTimeout(resolve, 1500));
-            toast.success('Assinatura cancelada com sucesso. Você terá acesso até o fim do período já pago.');
+            toast.success('Assinatura cancelada. Você terá acesso até o fim do período pago.');
             setIsCancelModalOpen(false);
-        } catch (err) {
-            console.error(err);
-            toast.error('Erro ao cancelar assinatura');
-        } finally {
-            setIsCancelling(false);
-        }
+        } catch { toast.error('Erro ao cancelar assinatura'); }
+        finally { setIsCancelling(false); }
     };
 
-    const getStatusStyle = (status) => {
-        switch(status) {
-            case 'active': return 'bg-green-100 text-green-700 border-green-200';
-            case 'cancelled': return 'bg-orange-100 text-orange-700 border-orange-200';
-            case 'past_due': return 'bg-red-100 text-red-700 border-red-200';
-            default: return 'bg-gray-100 text-gray-700 border-gray-200';
-        }
+    const statusStyle = {
+        active: 'bg-success/15 text-success border-success/25',
+        cancelled: 'bg-warning/15 text-warning border-warning/25',
+        past_due: 'bg-destructive/15 text-destructive border-destructive/25',
+        default: 'bg-muted text-muted-foreground border-border',
     };
+    const statusText = { active: 'Ativa', cancelled: 'Cancelada', past_due: 'Vencida / Pendente', default: 'Inativa' };
 
-    const getStatusText = (status) => {
-        switch(status) {
-            case 'active': return 'Ativa';
-            case 'cancelled': return 'Cancelada';
-            case 'past_due': return 'Vencida / Pendente';
-            default: return 'Inativa';
-        }
-    };
+    const paymentStatusStyle = (s) => ({
+        approved: 'bg-success/15 text-success',
+        pending: 'bg-warning/15 text-warning',
+        rejected: 'bg-destructive/15 text-destructive',
+    }[s] || 'bg-muted text-muted-foreground');
+
+    const paymentDotStyle = (s) => ({
+        approved: 'bg-success',
+        pending: 'bg-warning',
+        rejected: 'bg-destructive',
+    }[s] || 'bg-muted-foreground');
+
+    /* ── shared card section style ── */
+    const sectionCls = "bg-card rounded-2xl p-6 shadow-soft border border-border";
+    const iconBoxCls = (color) => `p-2 ${color} rounded-xl`;
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Status Alert */}
-            {isPro && subscriptionStatus === 'active' && formData?.expires_at && (
-                (() => {
-                    const expiresDate = new Date(formData.expires_at);
-                    const now = new Date();
-                    const diffTime = expiresDate.getTime() - now.getTime();
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                    if (diffDays <= 3 && diffDays >= 0) {
-                        return (
-                            <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 flex gap-3 shadow-sm">
-                                <AlertCircle className="text-orange-500 shrink-0 mt-0.5" size={20} />
-                                <div>
-                                    <h4 className="font-semibold text-orange-800 text-sm">Sua assinatura vence em breve</h4>
-                                    <p className="text-xs text-orange-700 mt-1">
-                                        Renove agora para evitar a interrupção dos seus serviços premium. Vence em {diffDays === 0 ? 'algumas horas' : `${diffDays} dia(s)`}.
-                                    </p>
-                                </div>
-                            </div>
-                        );
-                    }
-                    return null;
-                })()
-            )}
-
-            {/* Current Plan Overview */}
-            <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3 text-gray-900">
-                        <div className="p-2 bg-pink-50 text-pink-600 rounded-xl">
-                            <Crown size={24} className={isPro ? "fill-pink-500" : ""} />
+            {/* ── Alerta vencimento próximo ── */}
+            {isPro && subscriptionStatus === 'active' && formData?.expires_at && (() => {
+                const diff = Math.ceil((new Date(formData.expires_at) - new Date()) / 86400000);
+                if (diff > 3 || diff < 0) return null;
+                return (
+                    <div className="bg-warning/10 border border-warning/20 rounded-2xl p-4 flex gap-3 shadow-soft">
+                        <AlertCircle className="text-warning shrink-0 mt-0.5" size={20} />
+                        <div>
+                            <h4 className="font-semibold text-warning text-sm">Sua assinatura vence em breve</h4>
+                            <p className="text-xs text-warning/80 mt-1">
+                                Renove agora para evitar interrupção. Vence em {diff === 0 ? 'algumas horas' : `${diff} dia(s)`}.
+                            </p>
                         </div>
-                        <h2 className="text-lg font-bold">Resumo do Plano</h2>
+                    </div>
+                );
+            })()}
+
+            {/* ── Resumo do Plano ── */}
+            <div className={sectionCls}>
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className={iconBoxCls("bg-accent text-primary")}>
+                            <Crown size={24} className={isPro ? "fill-primary" : ""} />
+                        </div>
+                        <h2 className="text-lg font-bold text-foreground">Resumo do Plano</h2>
                     </div>
                     {isPro && (
-                        <span className={cn("px-3 py-1 rounded-full text-xs font-bold border", getStatusStyle(subscriptionStatus))}>
-                            {getStatusText(subscriptionStatus)}
+                        <span className={cn("px-3 py-1 rounded-full text-xs font-bold border", statusStyle[subscriptionStatus] || statusStyle.default)}>
+                            {statusText[subscriptionStatus] || statusText.default}
                         </span>
                     )}
                 </div>
 
                 {isPro ? (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                            <p className="text-xs text-gray-500 font-medium mb-1">Plano Atual</p>
-                            <p className="font-bold text-gray-900">PRO ✨</p>
-                        </div>
-                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                            <p className="text-xs text-gray-500 font-medium mb-1">Valor</p>
-                            <p className="font-bold text-gray-900">{planValue}</p>
-                        </div>
-                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                            <p className="text-xs text-gray-500 font-medium mb-1">Vencimento Atual</p>
-                            <p className="font-bold text-gray-900">
-                                {formData?.expires_at ? new Date(formData.expires_at).toLocaleDateString('pt-BR') : '-'}
-                            </p>
-                        </div>
-                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                            <p className="text-xs text-gray-500 font-medium mb-1">Próxima Cobrança</p>
-                            <p className="font-bold text-gray-900">{renewalDate.toLocaleDateString('pt-BR')}</p>
-                        </div>
+                        {[
+                            { label: 'Plano Atual', value: 'PRO ✨' },
+                            { label: 'Valor', value: planValue },
+                            { label: 'Vencimento Atual', value: formData?.expires_at ? new Date(formData.expires_at).toLocaleDateString('pt-BR') : '-' },
+                            { label: 'Próxima Cobrança', value: renewalDate.toLocaleDateString('pt-BR') },
+                        ].map(item => (
+                            <div key={item.label} className="bg-muted/50 rounded-xl p-4 border border-border">
+                                <p className="text-xs text-muted-foreground font-medium mb-1">{item.label}</p>
+                                <p className="font-bold text-foreground">{item.value}</p>
+                            </div>
+                        ))}
                     </div>
                 ) : (
                     <div className="text-center py-6">
-                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
-                            <Crown size={28} className="text-gray-400" />
+                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
+                            <Crown size={28} className="text-muted-foreground" />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">Você está no plano Grátis</h3>
-                        <p className="text-gray-500 text-sm mb-6 max-w-sm mx-auto">
+                        <h3 className="text-lg font-bold text-foreground mb-2">Você está no plano Grátis</h3>
+                        <p className="text-muted-foreground text-sm mb-6 max-w-sm mx-auto">
                             Faça o upgrade para o plano PRO e desbloqueie acesso total ao BeautyStock.
                         </p>
                         <button
                             onClick={() => navigate('/checkout/pro')}
-                            className="bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-pink-200 hover:shadow-pink-300 transition-all active:scale-[0.98] inline-flex items-center gap-2"
+                            className="bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold py-3 px-8 rounded-xl shadow-pink hover:opacity-90 transition-all active:scale-[0.98] inline-flex items-center gap-2"
                         >
                             <Crown size={20} className="fill-yellow-300 text-yellow-300" />
                             Fazer Upgrade para PRO
@@ -196,24 +160,23 @@ export function PaymentTab({ isPro, user, formData }) {
                 )}
             </div>
 
-            {/* Payment Method & Actions Container */}
+            {/* ── Forma de Pagamento + Ações ── */}
             {isPro && (
                 <div className="grid md:grid-cols-2 gap-6">
-                    {/* Payment Method */}
-                    <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 flex flex-col h-full">
-                        <div className="flex items-center gap-3 text-gray-900 mb-6">
-                            <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+
+                    {/* Cartão */}
+                    <div className={cn(sectionCls, "flex flex-col h-full")}>
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className={iconBoxCls("bg-info/15 text-info")}>
                                 <CreditCard size={20} />
                             </div>
-                            <h2 className="text-lg font-bold">Forma de Pagamento</h2>
+                            <h2 className="text-lg font-bold text-foreground">Forma de Pagamento</h2>
                         </div>
-                        
+
                         <div className="flex-1">
-                            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 text-white shadow-xl isolate relative overflow-hidden mb-4">
-                                {/* Decorative elements */}
-                                <div className="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-white/10 rounded-full blur-2xl z-0"></div>
-                                <div className="absolute bottom-0 left-0 -ml-4 -mb-4 w-20 h-20 bg-white/10 rounded-full blur-xl z-0"></div>
-                                
+                            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 text-white shadow-soft isolate relative overflow-hidden mb-4">
+                                <div className="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-white/10 rounded-full blur-2xl z-0" />
+                                <div className="absolute bottom-0 left-0 -ml-4 -mb-4 w-20 h-20 bg-white/10 rounded-full blur-xl z-0" />
                                 <div className="relative z-10 flex justify-between items-start mb-6">
                                     <div className="font-bold tracking-wider text-xl italic opacity-90">{mockCard.brand}</div>
                                     <CreditCard opacity={0.5} size={28} />
@@ -230,143 +193,108 @@ export function PaymentTab({ isPro, user, formData }) {
                             </div>
                         </div>
 
-                        <button className="w-full bg-gray-50 border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-100 transition-colors active:scale-[0.98]">
+                        <button className="w-full bg-muted border border-border text-foreground font-semibold py-3 rounded-xl hover:bg-accent hover:border-border-strong transition-colors active:scale-[0.98]">
                             Atualizar Cartão
                         </button>
                     </div>
 
-                    {/* Quick Actions */}
-                    <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 flex flex-col h-full">
-                        <div className="flex items-center gap-3 text-gray-900 mb-6">
-                            <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
+                    {/* Ações da assinatura */}
+                    <div className={cn(sectionCls, "flex flex-col h-full")}>
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className={iconBoxCls("bg-secondary/15 text-secondary")}>
                                 <Shield size={20} />
                             </div>
-                            <h2 className="text-lg font-bold">Gerenciar Assinatura</h2>
+                            <h2 className="text-lg font-bold text-foreground">Gerenciar Assinatura</h2>
                         </div>
 
                         <div className="space-y-3 flex-1">
-                            <button 
+                            {/* Renovar */}
+                            <button
                                 onClick={handleRenew}
                                 disabled={isRenewing}
-                                className="w-full bg-pink-50 border border-pink-100 text-pink-700 font-semibold py-3.5 px-4 rounded-xl hover:bg-pink-100 transition-colors flex items-center justify-between active:scale-[0.98]"
+                                className="w-full bg-accent text-primary border border-primary/20 font-semibold py-3.5 px-4 rounded-xl hover:bg-primary/15 hover:border-primary/30 transition-colors flex items-center gap-2 active:scale-[0.98] disabled:opacity-60"
                             >
-                                <span className="flex items-center gap-2">
-                                    {isRenewing ? <Loader2 className="animate-spin" size={18} /> : <ArrowRight size={18} />}
-                                    Pagar Fatura / Renovar
-                                </span>
+                                {isRenewing ? <Loader2 className="animate-spin" size={18} /> : <ArrowRight size={18} />}
+                                Pagar Fatura / Renovar
                             </button>
-                            
-                            <button className="w-full bg-gray-50 border border-gray-200 text-gray-700 font-semibold py-3.5 px-4 rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-between active:scale-[0.98]">
-                                <span className="flex items-center gap-2">
-                                    <Clock size={18} className="text-gray-500" />
-                                    Alterar Plano
-                                </span>
-                            </button>
-                            
-                            <button 
+
+
+                            {/* Cancelar */}
+                            <button
                                 onClick={() => setIsCancelModalOpen(true)}
-                                className="w-full border border-red-100 text-red-600 font-medium py-3.5 px-4 rounded-xl hover:bg-red-50 transition-colors flex items-center justify-between mt-auto"
+                                className="w-full bg-destructive/8 border border-destructive/20 text-destructive font-medium py-3.5 px-4 rounded-xl hover:bg-destructive/15 hover:border-destructive/30 transition-colors flex items-center gap-2 mt-auto active:scale-[0.98]"
                             >
-                                <span className="flex items-center gap-2">
-                                    <XCircle size={18} />
-                                    Cancelar Assinatura
-                                </span>
+                                <XCircle size={18} />
+                                Cancelar Assinatura
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Payment History */}
+            {/* ── Histórico ── */}
             {isPro && (
-                <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 overflow-hidden">
-                    <div className="flex items-center gap-3 text-gray-900 mb-6">
-                        <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                <div className={cn(sectionCls, "overflow-hidden")}>
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className={iconBoxCls("bg-success/15 text-success")}>
                             <Receipt size={20} />
                         </div>
-                        <h2 className="text-lg font-bold">Histórico de Cobranças</h2>
+                        <h2 className="text-lg font-bold text-foreground">Histórico de Cobranças</h2>
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-[600px] text-sm text-left text-gray-500">
-                            <thead className="text-xs text-gray-400 uppercase bg-gray-50 rounded-t-lg">
+                        <table className="w-full min-w-[600px] text-sm text-left">
+                            <thead className="bg-muted rounded-t-lg border-b border-border">
                                 <tr>
-                                    <th className="px-4 py-3 font-semibold rounded-tl-lg">Data</th>
-                                    <th className="px-4 py-3 font-semibold">Valor</th>
-                                    <th className="px-4 py-3 font-semibold">Status</th>
-                                    <th className="px-4 py-3 font-semibold">Método</th>
-                                    <th className="px-4 py-3 font-semibold text-right rounded-tr-lg">Detalhes</th>
+                                    {['Data', 'Valor', 'Status', 'Método', 'Detalhes'].map((h, i) => (
+                                        <th key={h} className={cn("px-4 py-3 text-xs font-semibold text-muted-foreground uppercase", i === 4 && "text-right")}>
+                                            {h}
+                                        </th>
+                                    ))}
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="divide-y divide-border">
                                 {historyLoading ? (
                                     <tr>
                                         <td colSpan={5} className="px-4 py-8 text-center">
-                                            <Loader2 className="animate-spin mx-auto text-pink-500" size={24} />
+                                            <Loader2 className="animate-spin mx-auto text-primary" size={24} />
                                         </td>
                                     </tr>
                                 ) : paymentHistory.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">
+                                        <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground text-sm">
                                             Nenhum pagamento encontrado.
                                         </td>
                                     </tr>
-                                ) : (
-                                    paymentHistory.map((item, i) => (
-                                        <tr key={item.id} className={cn("border-b border-gray-50 hover:bg-gray-50/50 transition-colors", i === paymentHistory.length - 1 ? 'border-none' : '')}>
-                                            <td className="px-4 py-4 font-medium text-gray-900">
-                                                {new Date(item.date).toLocaleDateString('pt-BR')}
-                                            </td>
-                                            <td className="px-4 py-4 text-gray-900 font-medium">
-                                                {typeof item.amount === 'number'
-                                                    ? `R$ ${item.amount.toFixed(2).replace('.', ',')}`
-                                                    : item.amount
-                                                }
-                                            </td>
-                                            <td className="px-4 py-4">
-                                                <span className={cn(
-                                                    "inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-xs font-medium",
-                                                    item.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                                    item.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                    item.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                                    'bg-gray-100 text-gray-700'
-                                                )}>
-                                                    <div className={cn(
-                                                        "w-1.5 h-1.5 rounded-full",
-                                                        item.status === 'approved' ? 'bg-green-500' :
-                                                        item.status === 'pending' ? 'bg-yellow-500' :
-                                                        item.status === 'rejected' ? 'bg-red-500' :
-                                                        'bg-gray-500'
-                                                    )}></div>
-                                                    {item.status === 'approved' ? 'Aprovado' :
-                                                     item.status === 'pending' ? 'Pendente' :
-                                                     item.status === 'rejected' ? 'Recusado' :
-                                                     item.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-4">{item.method}</td>
-                                            <td className="px-4 py-4 text-right">
-                                                <span className="text-gray-400 text-sm">
-                                                    {item.method === 'PIX' ? '⚡' : '💳'}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
+                                ) : paymentHistory.map((item, i) => (
+                                    <tr key={item.id} className="hover:bg-muted/50 transition-colors">
+                                        <td className="px-4 py-4 font-medium text-foreground">
+                                            {new Date(item.date).toLocaleDateString('pt-BR')}
+                                        </td>
+                                        <td className="px-4 py-4 text-foreground font-medium">
+                                            {typeof item.amount === 'number' ? `R$ ${item.amount.toFixed(2).replace('.', ',')}` : item.amount}
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <span className={cn("inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-xs font-medium", paymentStatusStyle(item.status))}>
+                                                <div className={cn("w-1.5 h-1.5 rounded-full", paymentDotStyle(item.status))} />
+                                                {{ approved: 'Aprovado', pending: 'Pendente', rejected: 'Recusado' }[item.status] || item.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-4 text-muted-foreground">{item.method}</td>
+                                        <td className="px-4 py-4 text-right text-muted-foreground">
+                                            {item.method === 'PIX' ? '⚡' : '💳'}
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
-                        
-                        {/* Mobile view fallback (stack cards on very small screens, though overflow-x handles most) */}
-                        <div className="sm:hidden space-y-3 mt-4">
-                           <p className="text-xs text-center text-gray-400 italic">Deslize para o lado para ver toda a tabela.</p>
-                        </div>
                     </div>
                 </div>
             )}
 
-            <CancelSubscriptionModal 
-                isOpen={isCancelModalOpen} 
-                onClose={() => setIsCancelModalOpen(false)} 
+            <CancelSubscriptionModal
+                isOpen={isCancelModalOpen}
+                onClose={() => setIsCancelModalOpen(false)}
                 onConfirm={handleCancel}
                 loading={isCancelling}
             />

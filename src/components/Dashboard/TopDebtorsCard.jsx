@@ -1,61 +1,74 @@
-import { useState, useEffect } from 'react';
+import { useState, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Crown, Lock } from 'lucide-react';
+import { AlertCircle, TrendingUp } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePlan } from '../../hooks/usePlan';
 import { useCustomerDebt } from '../../hooks/useCustomerDebt';
 import ChargeModal from '../Customers/ChargeModal';
-import { cn } from '../../lib/utils';
 
-export default function TopDebtorsCard() {
+const TopDebtorsCard = memo(function TopDebtorsCard() {
     const { user } = useAuth();
     const { isPro } = usePlan();
     const navigate = useNavigate();
 
-    // Custom Hook brings dynamically calculated debts
-    const { customers: allDebtors, loading: debtorsLoading } = useCustomerDebt();
-
-    // Modal State
+    const { customers: allDebtors, loading: debtorsLoading, predictedProfit } = useCustomerDebt();
     const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-    // Get Top 3 Debtors
     const debtors = allDebtors.filter(c => c.debt > 0).slice(0, 3);
 
-    // We show loading state based on actual data fetching
-    const loading = debtorsLoading;
-
     return (
-        <div className="bg-white rounded-3xl p-6 shadow-soft border border-gray-100 h-full flex flex-col">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">Clientes que mais devem</h3>
+        <div className="bg-card rounded-3xl p-6 shadow-soft border border-border h-full flex flex-col gap-4">
+            <h3 className="text-lg font-bold text-foreground">Clientes que mais devem</h3>
 
-            {loading ? (
-                <div className="space-y-3 animate-pulse">
+            {debtorsLoading ? (
+                <div className="space-y-3 animate-pulse flex-1">
                     {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-16 bg-gray-50 rounded-2xl"></div>
+                        <div key={i} className="h-16 bg-muted rounded-2xl" />
                     ))}
                 </div>
             ) : debtors.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
-                    <AlertCircle size={32} strokeWidth={1.5} className="text-green-300 mb-2" />
-                    <p className="text-sm font-medium text-gray-500 mb-1">Tudo em dia!</p>
-                    <p className="text-xs text-gray-400">Nenhum cliente com dívida pendente.</p>
+                    <AlertCircle size={32} strokeWidth={1.5} className="text-success mb-2" />
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Tudo em dia!</p>
+                    <p className="text-xs text-muted-foreground/70">Nenhum cliente com dívida pendente.</p>
                 </div>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-3 flex-1">
                     {debtors.map((customer) => (
-                        <div key={customer.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl hover:bg-pink-50/30 transition-colors border border-transparent hover:border-pink-50">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-bold">
+                        <div
+                            key={customer.id}
+                            className="flex items-center justify-between p-3 bg-muted rounded-2xl hover:bg-accent transition-colors border border-transparent hover:border-primary/10"
+                        >
+                            <button
+                                onClick={() => navigate(`/clientes/${customer.id}`)}
+                                className="flex items-center gap-3 text-left hover:opacity-75 active:scale-95 transition-all"
+                            >
+                                <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
                                     {customer.name.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                    <p className="text-sm font-bold text-gray-800 truncate max-w-[120px]">{customer.name.split(' ')[0]}</p>
-                                    <p className="text-xs font-semibold text-red-500">R$ {customer.debt.toFixed(2)}</p>
+                                    <p className="text-sm font-bold text-foreground truncate max-w-[120px] underline-offset-2 hover:underline">
+                                        {customer.name.split(' ')[0]}
+                                    </p>
+                                    <p className="text-xs font-semibold text-destructive">
+                                        R$ {customer.debt.toFixed(2)}
+                                    </p>
                                 </div>
-                            </div>
+                            </button>
+
+                            {/* Botão Cobrar */}
                             <button
                                 onClick={() => setSelectedCustomer(customer)}
-                                className="text-[10px] bg-green-100 text-green-700 px-3 py-1.5 rounded-full font-bold hover:bg-green-200 active:scale-95 transition-all shadow-sm flex items-center gap-1 uppercase"
+                                className="
+                                    text-[10px] font-black uppercase tracking-wider
+                                    px-3 py-1.5 rounded-full
+                                    bg-success/15 text-success
+                                    border border-success/25
+                                    hover:bg-success/25 hover:border-success/40
+                                    active:scale-95
+                                    transition-all shadow-sm
+                                    flex items-center gap-1
+                                "
                             >
                                 Cobrar
                             </button>
@@ -63,6 +76,21 @@ export default function TopDebtorsCard() {
                     ))}
                 </div>
             )}
+
+            {/* Predicted Profit Footer */}
+            <div className="mt-auto pt-3 border-t border-border/50">
+                <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-1.5">
+                        <TrendingUp size={13} className="text-success/70" />
+                        <span className="text-[11px] font-medium text-muted-foreground/70 tracking-wide">
+                            Lucro previsto total
+                        </span>
+                    </div>
+                    <span className="text-[12px] font-bold text-success/80">
+                        R$ {(predictedProfit || 0).toFixed(2).replace('.', ',')}
+                    </span>
+                </div>
+            </div>
 
             {selectedCustomer && (
                 <ChargeModal
@@ -73,4 +101,6 @@ export default function TopDebtorsCard() {
             )}
         </div>
     );
-}
+});
+
+export default TopDebtorsCard;

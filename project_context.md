@@ -1,7 +1,7 @@
 # BeautyStock - Project Context
 
-> **Last Updated:** 2026-03-03
-> **Status:** Active Development (Freemium Finalization, Stock Reliability, & Subscriptions)
+> **Last Updated:** 2026-03-13
+> **Status:** Active Development (Payment Integration, UI Polish, & Subscription Management)
 
 ## 📌 Project Overview
 **BeautyStock** is a mobile-first SaaS tailored for cosmetics and perfume resellers. It provides an intuitive, visually appealing, and "Soft & Premium" interface for inventory control, sales management, and customer relationship management, purposefully moving away from complex and sterile ERP software.
@@ -107,16 +107,15 @@
   - VIP WhatsApp Support.
   - Smart Tone selection for WhatsApp billing.
 
-## 🔄 Recent Major Updates (Early March 2026)
+## 🔄 Recent Major Updates (Mid March 2026)
+- **Payment System & Webhooks:** Overhauled payment processing by integrating and fixing both Asaas and MercadoPago webhooks. Implemented robust signature validation, idempotency, and correct plan upgrades for PIX transactions.
+- **Subscription Management:** Created a new premium "Subscription & Payment" tab within the Account settings for users to easily track their active plan and billing history.
+- **Catalog Differentiation:** Enforced strict boundaries on the Public Catalog, limiting Free users to 20 items with a watermark footer, while PRO offers unlimited professional display.
+- **UI/UX Polish:** Fixed overlapping layouts with the Bottom Navigation across Checkout and Catalog settings. Refined the "Best Sellers" display for visual consistency.
 - **PRO Plan Auto-Notifications:** Built the entire Notifications engine, scheduled Edge Functions, Toast Alerts, and 2-day expiration dynamic CTA blocks.
-- **Freemium Tier Finalization:** Adjusted Free plan limits (50 products, 5 clients, 3 alerts) and enforced limits on catalog visibility and CSV exports.
 - **Stock Reliability:** Implemented DB-level RPC (`confirm_sale`) validations to prevent negative stock sales and race conditions.
-- **Payment & Webhooks:** Overhauled MercadoPago webhooks to process subscriptions, single PIX checkout, and expiration dates (`expires_at`).
-- **UI/UX Polish:** Perfected Smart Banner centering on the public catalog and added Customer Deletion functionality.
-- **PWA & Security:** Finalized PWA transition and OTP email confirmation flow.
 
 ## 🚀 Next Steps & Roadmap
-- Finalize MercadoPago webhook testing and edge cases.
 - Implement Push Notifications via Service Workers.
 - Finalize the visual Chatbot Builder UI in the web application.
 - Expand reporting (PDF Exports for sales/inventory).

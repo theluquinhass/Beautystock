@@ -10,7 +10,8 @@ export function useDashboard() {
         lowStock: 0,
         receivables: 0,
         salesToday: 0,
-        itemsSoldToday: 0
+        itemsSoldToday: 0,
+        receivedThisMonth: 0
     });
     const [recentMovements, setRecentMovements] = useState([]);
     const [bestSellers, setBestSellers] = useState([]);
@@ -49,7 +50,7 @@ export function useDashboard() {
             ] = await Promise.all([
                 supabase.from('products').select('id, name, cost, price, image_path, is_active, variations(id, stock_quantity)').eq('user_id', user.id),
                 supabase.from('movements').select('*').eq('user_id', user.id),
-                supabase.from('payments').select('customer_id, amount').eq('user_id', user.id)
+                supabase.from('payments').select('customer_id, amount, date').eq('user_id', user.id)
             ]);
 
             // --- CALCULATIONS ---
@@ -68,10 +69,27 @@ export function useDashboard() {
             let monthlyProfit = 0;
             let salesTodayTotal = 0;
             let itemsSoldTodayTotal = 0;
+            let receivedThisMonth = 0;
             const productSales = {};
+
+            // We need to calculate each customer's overall profit margin for their debts
+            // so when they pay, we know how much of that payment is profit.
+            const customerDebtData = {}; 
 
             movements?.forEach(m => {
                 const date = parseISO(m.date);
+                const product = products?.find(p => p.variations?.some(v => v.id === m.variation_id));
+                const revenue = (m.unit_price || 0) * m.quantity;
+                const cost = (product?.cost || 0) * m.quantity;
+
+                // Build Debt History for Margin calculation
+                if (m.is_on_credit && m.customer_id) {
+                    if (!customerDebtData[m.customer_id]) {
+                        customerDebtData[m.customer_id] = { revenue: 0, cost: 0 };
+                    }
+                    customerDebtData[m.customer_id].revenue += revenue;
+                    customerDebtData[m.customer_id].cost += cost;
+                }
 
                 // Sales Today
                 if (m.type === 'EXIT' && isSameDay(date, now)) {
@@ -79,18 +97,40 @@ export function useDashboard() {
                     itemsSoldTodayTotal += m.quantity;
                 }
 
-                // Profit (Month)
+                // Current Month Metrics
                 if (m.type === 'EXIT' && date >= startOfCurrentMonth) {
-                    const product = products?.find(p => p.variations?.some(v => v.id === m.variation_id));
                     if (product) {
-                        const profit = (product.price - product.cost) * m.quantity;
-                        monthlyProfit += profit;
+                        // Cash Inflow & Immediate Profit (only non-credit sales)
+                        if (!m.is_on_credit) {
+                            receivedThisMonth += revenue;
+                            monthlyProfit += (revenue - cost);
+                        }
 
-                        // Best Sellers logic
+                        // Best Sellers logic (counts all sales)
                         if (!productSales[product.id]) {
                             productSales[product.id] = { ...product, soldCount: 0 };
                         }
                         productSales[product.id].soldCount += m.quantity;
+                    }
+                }
+            });
+
+            // Debt Payments received this month
+            payments?.forEach(p => {
+                if (p.date) {
+                    const pDate = parseISO(p.date);
+                    if (pDate >= startOfCurrentMonth) {
+                        receivedThisMonth += p.amount;
+
+                        // Calculate how much of this payment is profit based on customer's historical debt margin
+                        let profitRatio = 0;
+                        if (p.customer_id && customerDebtData[p.customer_id] && customerDebtData[p.customer_id].revenue > 0) {
+                            const cData = customerDebtData[p.customer_id];
+                            profitRatio = (cData.revenue - cData.cost) / cData.revenue;
+                        }
+                        
+                        // Add proportional profit from the paid debt
+                        monthlyProfit += p.amount * profitRatio;
                     }
                 }
             });
@@ -117,7 +157,8 @@ export function useDashboard() {
                 lowStock: lowStockCount,
                 receivables: totalReceivables,
                 salesToday: salesTodayTotal,
-                itemsSoldToday: itemsSoldTodayTotal
+                itemsSoldToday: itemsSoldTodayTotal,
+                receivedThisMonth
             });
 
             const formattedRecent = recentWithNames?.map(m => ({

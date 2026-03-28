@@ -1,7 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { MercadoPagoConfig, Payment } from 'npm:mercadopago';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import * as crypto from "node:crypto";
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -9,40 +7,96 @@ const corsHeaders = {
 };
 
 // --- Business Rules & Config ---
-// Em produção, use 29.90. Valor mantido em 1.00 para facilitar seus testes atuais.
-const PLAN_PRICE = 1.02;
+const PLAN_PRICE = 29.90;
 const SYSTEM_NAME = 'beautystock';
 const PLAN_NAME = 'pro';
 
-// --- Utility Functions ---
+// --- Asaas API Helper ---
+async function asaasRequest(endpoint: string, method: string, body?: any) {
+    const apiUrl = Deno.env.get('ASAAS_API_URL') ?? 'https://sandbox.asaas.com/api';
+    const apiKey = Deno.env.get('ASAAS_API_KEY') ?? '';
 
-/**
- * Basic CPF validation (checks length and repeated sequences).
- * For production, consider adding a full mod-11 validation block.
- */
+    const options: RequestInit = {
+        method,
+        headers: {
+            'Content-Type': 'application/json',
+            'access_token': apiKey,
+            'User-Agent': 'BeautyStock/1.0',
+        },
+    };
+
+    if (body) {
+        options.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(`${apiUrl}${endpoint}`, options);
+    const data = await response.json();
+
+    if (!response.ok) {
+        console.error(`[ASAAS] API Error ${response.status}:`, JSON.stringify(data));
+        const errorMsg = data.errors?.[0]?.description || data.message || `Erro na API Asaas (${response.status})`;
+        throw new Error(errorMsg);
+    }
+
+    return data;
+}
+
+// --- Customer Management ---
+async function getOrCreateAsaasCustomer(
+    supabase: any,
+    profile: any,
+    email: string
+): Promise<string> {
+    // 1. Check if we already have the Asaas customer ID stored
+    if (profile.asaas_customer_id) {
+        console.log(`[CUSTOMER] Using existing Asaas customer: ${profile.asaas_customer_id}`);
+        return profile.asaas_customer_id;
+    }
+
+    const cpf = profile.cpf?.replace(/[^\d]/g, '');
+    const fullName = `${profile.first_name || 'Cliente'} ${profile.last_name || ''}`.trim();
+
+    // 2. Try to find existing customer by CPF
+    if (cpf) {
+        try {
+            const searchResult = await asaasRequest(`/v3/customers?cpfCnpj=${cpf}`, 'GET');
+            if (searchResult.data && searchResult.data.length > 0) {
+                const customerId = searchResult.data[0].id;
+                console.log(`[CUSTOMER] Found existing Asaas customer by CPF: ${customerId}`);
+
+                // Save for future use
+                await supabase.from('profiles').update({ asaas_customer_id: customerId }).eq('id', profile.id);
+                return customerId;
+            }
+        } catch (e) {
+            console.warn('[CUSTOMER] Error searching by CPF, will create new:', e);
+        }
+    }
+
+    // 3. Create new customer
+    console.log(`[CUSTOMER] Creating new Asaas customer for: ${fullName} (${email})`);
+    const newCustomer = await asaasRequest('/v3/customers', 'POST', {
+        name: fullName,
+        email: email,
+        cpfCnpj: cpf,
+        notificationDisabled: true, // We handle our own notifications
+    });
+
+    const customerId = newCustomer.id;
+    console.log(`[CUSTOMER] Created Asaas customer: ${customerId}`);
+
+    // Save for future use
+    await supabase.from('profiles').update({ asaas_customer_id: customerId }).eq('id', profile.id);
+
+    return customerId;
+}
+
+// --- CPF Validation ---
 function isValidCPF(cpf: string): boolean {
     const cleanCPF = cpf.replace(/[^\d]/g, '');
     if (cleanCPF.length !== 11) return false;
-    // Reject known invalid sequences (e.g. 11111111111)
     if (/^(\d)\1+$/.test(cleanCPF)) return false;
     return true;
-}
-
-/**
- * Generates an idempotency key to prevent double charging.
- */
-function generateIdempotencyKey(userId: string): string {
-    // A simple v4 UUID per request is best practice for idempotency.
-    return crypto.randomUUID();
-}
-
-/**
- * Creates a highly traceable external_reference
- * Format: system_plan_userId_timestamp
- */
-function generateExternalReference(userId: string): string {
-    const timestamp = Date.now();
-    return `${SYSTEM_NAME}_${PLAN_NAME}_${userId}_${timestamp}`;
 }
 
 serve(async (req) => {
@@ -56,9 +110,9 @@ serve(async (req) => {
         const userIdText = payload.userId;
         const emailRequest = payload.email;
 
-        // 2. Strict Input Validation (Fail Fast)
-        if (!userIdText) {
-            throw new Error('O ID do usuário é obrigatório para transações de pagamento.');
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader) {
+            throw new Error('Não autorizado: Cabeçalho de autorização ausente.');
         }
 
         const supabase = createClient(
@@ -66,7 +120,31 @@ serve(async (req) => {
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         );
 
-        // 3. Fetch canonical user data from Database
+        // EXTRA SECURITY: O anon client valida o JWT do usuário
+        const anonClient = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+            { global: { headers: { Authorization: authHeader } } }
+        );
+
+        const { data: { user }, error: authError } = await anonClient.auth.getUser();
+        if (authError || !user) {
+            throw new Error('Sessão expirada ou inválida. Faça login novamente.');
+        }
+
+        // ANTI-IMPERSONATION: Garante que o usuário só pode gerar pagamento para si mesmo
+        if (user.id !== userIdText) {
+            console.error(`[SECURITY] User ${user.id} tried to create payment for ${userIdText}`);
+            await supabase.from('audit_logs').insert({
+                user_id: user.id,
+                action: 'payment_impersonation_attempt',
+                status: 'blocked',
+                details: { target_user_id: userIdText }
+            });
+            throw new Error('Violação de segurança: Você não pode gerar pagamentos para outra conta.');
+        }
+
+        // 3. Fetch user profile
         const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
@@ -78,7 +156,7 @@ serve(async (req) => {
             throw new Error('Usuário não encontrado no banco de dados.');
         }
 
-        // 4. Validate Critical Information (Email, Name, CPF)
+        // 4. Validate Critical Information
         const payerEmail = emailRequest || profile.email;
         if (!payerEmail || !payerEmail.includes('@')) {
             throw new Error('Um e-mail válido é obrigatório para processar o pagamento.');
@@ -92,83 +170,52 @@ serve(async (req) => {
         }
 
         const cpf = profile.cpf?.replace(/[^\d]/g, '');
-
-        // Anti-Gambiarra: Nunca use CPF falso em produção se a sua conta for real, 
-        // caso contrário sua conta MercadoPago pode ser bloqueada.
         if (!cpf || !isValidCPF(cpf)) {
-            throw new Error('Você precisa de um CPF válido cadastrado para realizar o pagamento Pix. Vá nas configurações do seu perfil e adicione.');
+            throw new Error('Você precisa de um CPF válido cadastrado para realizar o pagamento. Vá nas configurações do seu perfil e adicione.');
         }
 
-        // 5. Setup MP SDK
-        const client = new MercadoPagoConfig({
-            accessToken: Deno.env.get('MP_ACCESS_TOKEN') ?? ''
+        // 5. Get or create Asaas customer
+        const customerId = await getOrCreateAsaasCustomer(supabase, profile, payerEmail);
+
+        // 6. Create PIX payment in Asaas
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+        console.log(`[PIX] Creating Asaas charge for customer: ${customerId} | User: ${userIdText}`);
+
+        const charge = await asaasRequest('/v3/payments', 'POST', {
+            customer: customerId,
+            billingType: 'PIX',
+            value: PLAN_PRICE,
+            dueDate: today,
+            description: `Assinatura ${PLAN_NAME.toUpperCase()} - ${SYSTEM_NAME.toUpperCase()} (1 Mês)`,
+            externalReference: userIdText,
         });
-        const payment = new Payment(client);
 
-        // 6. Build the highly structured payload
-        const externalReference = generateExternalReference(userIdText);
-        const idempotencyKey = generateIdempotencyKey(userIdText);
+        console.log(`[PIX] Charge created: ${charge.id}, status: ${charge.status}`);
 
-        const paymentData = {
-            body: {
-                transaction_amount: PLAN_PRICE, // Security: Must ALWAYS come from the backend layer, NEVER trust frontend sent prices
-                description: `Assinatura ${PLAN_NAME.toUpperCase()} - ${SYSTEM_NAME.toUpperCase()} (1 Mês)`,
-                payment_method_id: 'pix',
-                payer: {
-                    email: payerEmail,
-                    first_name: firstName,
-                    last_name: lastName,
-                    identification: {
-                        type: 'CPF',
-                        number: cpf
-                    }
-                },
-                external_reference: externalReference,
+        // 7. Get PIX QR Code
+        const pixData = await asaasRequest(`/v3/payments/${charge.id}/pixQrCode`, 'GET');
 
-                // Extra metadata helps significantly in debugging and webhook logic
-                metadata: {
-                    user_id: userIdText,
-                    plan: PLAN_NAME,
-                    environment: 'production',
-                    application: SYSTEM_NAME
-                }
-            },
-            requestOptions: {
-                idempotencyKey: idempotencyKey // Security: Prevents duplicate charges
-            }
-        };
-
-        console.log(`[PIX] Creating for: ${payerEmail} | ExternalRef: ${externalReference} | IdemKey: ${idempotencyKey}`);
-
-        // 7. Execute payment creation
-        const result = await payment.create(paymentData);
-
-        // EXTRA (TODO): Future Improvement
-        // Here you would register this intent to a 'payments' table:
-        // await supabase.from('payments').insert({
-        //     payment_id: String(result.id),
-        //     user_id: userIdText,
-        //     external_reference: externalReference,
-        //     status: result.status, // e.g., 'pending'
-        //     amount: PLAN_PRICE,
-        //     payment_method: 'pix'
-        // });
-
-        const qrCode = result.point_of_interaction?.transaction_data?.qr_code;
-        const qrCodeBase64 = result.point_of_interaction?.transaction_data?.qr_code_base64;
-
-        if (!qrCode) {
-            throw new Error("Mercado Pago retornou sucesso, mas as credenciais do PIX (QRCode) não vieram no payload.");
+        if (!pixData.encodedImage || !pixData.payload) {
+            throw new Error('Asaas retornou sucesso, mas os dados do PIX (QRCode) não vieram no payload.');
         }
+
+        // AUDIT LOG: Registro de geração de fatura
+        await supabase.from('audit_logs').insert({
+            user_id: userIdText,
+            action: 'payment_created',
+            status: 'success',
+            details: { payment_id: charge.id, type: 'PIX', value: PLAN_PRICE }
+        });
 
         // 8. Standardized Success Response
         return new Response(
             JSON.stringify({
                 success: true,
-                paymentId: result.id,
-                qrCode: qrCode,
-                qrCodeBase64: qrCodeBase64,
-                externalReference: externalReference
+                paymentId: charge.id,
+                qrCode: pixData.payload,          // Pix copia-e-cola
+                qrCodeBase64: pixData.encodedImage, // Base64 image for QR code
+                externalReference: userIdText,
             }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -177,29 +224,21 @@ serve(async (req) => {
         );
 
     } catch (error: any) {
-        // 9. Standardized Detailed Error Logging & Response
-        console.error('[CRITICAL MP API ERROR]:', error);
+        console.error('[CRITICAL ASAAS API ERROR]:', error);
 
         let errorMsg = 'Ocorreu um erro inesperado ao gerar a fatura. Tente novamente mais tarde.';
-        let statusCode = 400;
-
-        // Try to parse exact Mercado Pago API rejection
-        if (error.response?.data?.message) {
-            errorMsg = error.response.data.message;
-            statusCode = error.response.status || 400;
-        } else if (error.message) {
-            errorMsg = error.message; // Our custom thrown errors
+        if (error.message) {
+            errorMsg = error.message;
         }
 
         return new Response(
             JSON.stringify({
                 success: false,
                 error: errorMsg,
-                details: error.response?.data || null
             }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 400, // Important: using 400 to trigger browser 'catch' correctly
+                status: 400,
             }
         );
     }

@@ -8,11 +8,7 @@ export default function BibiTabs({ activeTab, setActiveTab, isPro, isDesktop = f
         if (!isPro && tab !== 'resumo' && tab !== 'restock') {
             toast('Bibi completa é exclusiva do plano PRO 💖', {
                 icon: '✨',
-                style: {
-                    borderRadius: '16px',
-                    background: '#333',
-                    color: '#fff',
-                },
+                style: { borderRadius: '16px', background: '#333', color: '#fff' },
             });
             return;
         }
@@ -26,9 +22,10 @@ export default function BibiTabs({ activeTab, setActiveTab, isPro, isDesktop = f
         { id: 'dead_stock', label: 'Parados', icon: PackageSearch, pro: true },
     ];
 
+    /* ── Desktop ── */
     if (isDesktop) {
         return (
-            <div className="flex gap-2 p-4 pb-0 border-b border-gray-100 mb-4 overflow-x-auto no-scrollbar">
+            <div className="flex gap-2 p-4 pb-0 border-b border-border mb-4 overflow-x-auto no-scrollbar">
                 {tabs.map((tab) => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
@@ -39,19 +36,19 @@ export default function BibiTabs({ activeTab, setActiveTab, isPro, isDesktop = f
                             key={tab.id}
                             onClick={() => handleTabChange(tab.id)}
                             className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all border border-transparent relative",
+                                "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all border relative flex-shrink-0",
                                 isActive
-                                    ? "bg-pink-50 text-pink-600 border-pink-100 shadow-sm"
-                                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                                    ? "bg-accent text-primary border-primary/20 shadow-soft"
+                                    : "text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
                             )}
                         >
                             <Icon size={16} />
                             {tab.label}
-                            {isLocked && <Lock size={12} className="text-gray-400 ml-1" />}
+                            {isLocked && <Lock size={12} className="text-muted-foreground/50 ml-1" />}
 
-                            {/* Subtle underline for active desktop tab */}
+                            {/* Underline ativo */}
                             {isActive && (
-                                <span className="absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-8 h-[2px] bg-pink-500 rounded-t-full" />
+                                <span className="absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-8 h-[2px] bg-primary rounded-t-full" />
                             )}
                         </button>
                     );
@@ -60,30 +57,37 @@ export default function BibiTabs({ activeTab, setActiveTab, isPro, isDesktop = f
         );
     }
 
-    // Mobile tabs (original style)
+    /* ── Mobile ── */
+    const mobileActiveClass = {
+        resumo: "bg-foreground text-background shadow-soft",
+        restock: "bg-accent text-primary border border-primary/20 shadow-soft",
+        top_products: "bg-warning/15 text-warning border border-warning/20 shadow-soft",
+        dead_stock: "bg-secondary/20 text-secondary-foreground border border-secondary/25 shadow-soft",
+    };
+
     return (
-        <div className="flex p-2 gap-1 bg-white border-b border-gray-100 shadow-sm z-20 overflow-x-auto no-scrollbar">
+        <div className="flex p-2 gap-1 bg-card border-b border-border shadow-soft z-20 overflow-x-auto no-scrollbar">
             {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 const isLocked = tab.pro && !isPro;
-
-                let activeClass = "bg-gray-900 text-white shadow-sm";
-                if (tab.id === 'restock') activeClass = "bg-pink-50 text-pink-600 shadow-sm border border-pink-100";
-                if (tab.id === 'top_products') activeClass = "bg-yellow-50 text-yellow-600 shadow-sm border border-yellow-100";
-                if (tab.id === 'dead_stock') activeClass = "bg-purple-50 text-purple-600 shadow-sm border border-purple-100";
 
                 return (
                     <button
                         key={tab.id}
                         onClick={() => handleTabChange(tab.id)}
                         className={cn(
-                            "flex-shrink-0 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[11px] font-bold transition-all uppercase tracking-wider",
-                            isActive ? activeClass : "text-gray-500 hover:bg-gray-50 relative"
+                            "flex-shrink-0 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-[11px] font-bold transition-all uppercase tracking-wider relative",
+                            isActive
+                                ? mobileActiveClass[tab.id]
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
                         )}
                     >
-                        <Icon size={14} /> {tab.label}
-                        {isLocked && <Lock size={10} className="absolute top-1 right-1 text-gray-400" />}
+                        <Icon size={14} />
+                        {tab.label}
+                        {isLocked && (
+                            <Lock size={10} className="absolute top-1 right-1 text-muted-foreground/50" />
+                        )}
                     </button>
                 );
             })}

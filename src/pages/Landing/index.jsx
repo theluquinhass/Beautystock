@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
-import SocialProof from './components/SocialProof';
 import PainPoints from './components/PainPoints';
-import HowItWorks from './components/HowItWorks';
-import InteractiveDemo from './components/InteractiveDemo';
+import Transformation from './components/Transformation';
 import Benefits from './components/Benefits';
-import Results from './components/Results';
+import Features from './components/Features';
+import Niche from './components/Niche';
+import VisualProof from './components/VisualProof';
+import Comparison from './components/Comparison';
 import Pricing from './components/Pricing';
-import Guarantee from './components/Guarantee';
 import Testimonials from './components/Testimonials';
 import FAQ from './components/FAQ';
 import FinalCTA from './components/FinalCTA';
@@ -28,14 +28,14 @@ export default function Landing() {
             <Header />
             <main>
                 <Hero />
-                <SocialProof />
                 <PainPoints />
-                <HowItWorks />
-                <InteractiveDemo />
+                <Transformation />
                 <Benefits />
-                <Results />
+                <Features />
+                <Niche />
+                <VisualProof />
+                <Comparison />
                 <Pricing />
-                <Guarantee />
                 <Testimonials />
                 <FAQ />
                 <FinalCTA />

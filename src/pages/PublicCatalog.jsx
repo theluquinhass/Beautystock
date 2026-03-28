@@ -24,27 +24,34 @@ export default function PublicCatalog() {
     }, [slug]);
 
     useEffect(() => {
+        let ticking = false;
         const handleScroll = () => {
-            setShowScrollTop(window.scrollY > 400);
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    setShowScrollTop(window.scrollY > 400);
 
-            // Simple Intersection Observer logic to highlight chips
-            if (catalog?.categories) {
-                const scrollPosition = window.scrollY + 200; // offset
-                let currentActive = null;
+                    // Simple Intersection Observer logic to highlight chips
+                    if (catalog?.categories) {
+                        const scrollPosition = window.scrollY + 200; // offset
+                        let currentActive = null;
 
-                for (const cat of catalog.categories) {
-                    const el = document.getElementById(`category-${cat.id}`);
-                    if (el && el.offsetTop <= scrollPosition) {
-                        currentActive = cat.id;
+                        for (const cat of catalog.categories) {
+                            const el = document.getElementById(`category-${cat.id}`);
+                            if (el && el.offsetTop <= scrollPosition) {
+                                currentActive = cat.id;
+                            }
+                        }
+
+                        if (currentActive && currentActive !== activeCategoryId) {
+                            setActiveCategoryId(currentActive);
+                        }
                     }
-                }
-
-                if (currentActive && currentActive !== activeCategoryId) {
-                    setActiveCategoryId(currentActive);
-                }
+                    ticking = false;
+                });
+                ticking = true;
             }
         };
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, [catalog, activeCategoryId]);
 

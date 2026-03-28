@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { subDays, format, parseISO } from 'date-fns';
 import { supabase } from '../lib/supabase';
@@ -8,7 +8,7 @@ import { Crown, Lock, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import UpgradeModal from './UpgradeModal';
 
-export default function ProfitChart() {
+const ProfitChart = memo(function ProfitChart() {
     const { user } = useAuth();
     const { isPro } = usePlan();
     const navigate = useNavigate();
@@ -28,25 +28,46 @@ export default function ProfitChart() {
         try {
             const startDate = subDays(new Date(), days);
 
-            // Fetch exits/sales
-            const { data: movements, error } = await supabase
-                .from('movements')
-                .select(`
-                    date,
-                    quantity,
-                    unit_price,
-                    variations (
-                        products (
-                            cost
-                        )
-                    )
-                `)
-                .eq('user_id', user.id)
-                .eq('type', 'EXIT')
-                .gte('date', startDate.toISOString())
-                .order('date', { ascending: true });
+            // PARALLEL FETCH
+            const [
+                { data: movements, error: movError },
+                { data: allCreditMovements },
+                { data: payments }
+            ] = await Promise.all([
+                supabase
+                    .from('movements')
+                    .select('date, quantity, unit_price, is_on_credit, variations(products(cost))')
+                    .eq('user_id', user.id)
+                    .eq('type', 'EXIT')
+                    .gte('date', startDate.toISOString())
+                    .order('date', { ascending: true }),
+                supabase
+                    .from('movements')
+                    .select('customer_id, quantity, unit_price, variations(products(cost))')
+                    .eq('user_id', user.id)
+                    .eq('is_on_credit', true),
+                supabase
+                    .from('payments')
+                    .select('customer_id, amount, date')
+                    .eq('user_id', user.id)
+                    .gte('date', startDate.toISOString())
+            ]);
 
-            if (error) throw error;
+            if (movError) throw movError;
+
+            // Calculate historical margin for each customer
+            const customerDebtData = {};
+            allCreditMovements?.forEach(m => {
+                const cost = m.variations?.products?.cost || 0;
+                const revenue = (m.unit_price || 0) * m.quantity;
+                if (m.customer_id) {
+                    if (!customerDebtData[m.customer_id]) {
+                        customerDebtData[m.customer_id] = { revenue: 0, cost: 0 };
+                    }
+                    customerDebtData[m.customer_id].revenue += revenue;
+                    customerDebtData[m.customer_id].cost += cost * m.quantity;
+                }
+            });
 
             // Group by date
             const groups = {};
@@ -57,21 +78,33 @@ export default function ProfitChart() {
                 groups[key] = 0;
             }
 
-            // Fill with actual data
-            movements.forEach(m => {
+            // Fill with exact cash-based profit data
+            movements?.forEach(m => {
+                if (m.is_on_credit) return; // Cash basis: exclude credit sales here
+
                 const dateKey = format(parseISO(m.date), 'yyyy-MM-dd');
                 if (groups[dateKey] !== undefined) {
                     const price = m.unit_price || 0;
-                    // Supabase nested relation might be array or object depending on schema relations
-                    // Since variation -> product is one-to-one or many-to-one, variations should be an object
-                    // and products should be an object. Just handle safely:
                     let cost = 0;
                     if (m.variations && !Array.isArray(m.variations) && m.variations.products && !Array.isArray(m.variations.products)) {
                         cost = m.variations.products.cost || 0;
                     }
-
                     const profit = (price - cost) * m.quantity;
                     groups[dateKey] += profit;
+                }
+            });
+
+            // Include profit from payments received
+            payments?.forEach(p => {
+                if (!p.date) return;
+                const dateKey = format(parseISO(p.date), 'yyyy-MM-dd');
+                if (groups[dateKey] !== undefined) {
+                    let profitRatio = 0;
+                    if (p.customer_id && customerDebtData[p.customer_id] && customerDebtData[p.customer_id].revenue > 0) {
+                        const cData = customerDebtData[p.customer_id];
+                        profitRatio = (cData.revenue - cData.cost) / cData.revenue;
+                    }
+                    groups[dateKey] += p.amount * profitRatio;
                 }
             });
 
@@ -100,20 +133,20 @@ export default function ProfitChart() {
     };
 
     return (
-        <div className="bg-white rounded-3xl p-6 shadow-soft border border-gray-100 h-full flex flex-col">
+        <div className="bg-card rounded-3xl p-6 shadow-soft border border-border h-full flex flex-col">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
-                    <h3 className="text-lg font-bold text-gray-800">Crescimento de Lucro</h3>
+                    <h3 className="text-lg font-bold text-foreground">Crescimento de Lucro</h3>
                 </div>
 
-                <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
+                <div className="flex bg-muted p-1 rounded-xl border border-border">
                     {[7, 30, 90].map((d) => (
                         <button
                             key={d}
                             onClick={() => handleSetDays(d)}
                             className={`px-3 py-1 text-xs font-medium rounded-lg transition-all flex items-center gap-1 ${days === d
-                                ? 'bg-white text-pink-500 shadow-sm border border-gray-100'
-                                : 'text-gray-400 hover:text-gray-600'
+                                ? 'bg-card text-primary shadow-sm border border-border'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             {d === 90 ? '3 Meses' : `${d} Dias`}
@@ -125,14 +158,14 @@ export default function ProfitChart() {
 
             <div className="h-[250px] w-full -ml-4">
                 {loading ? (
-                    <div className="h-full flex items-center justify-center text-pink-300 animate-pulse">
+                    <div className="h-full flex items-center justify-center text-primary/50 animate-pulse">
                         Carregando...
                     </div>
                 ) : data.every(d => d.total === 0) ? (
                     <div className="h-full flex flex-col items-center justify-center text-center px-4 ml-4">
-                        <TrendingUp size={32} strokeWidth={1.5} className="text-gray-200 mb-3" />
-                        <h3 className="text-sm font-medium text-gray-500 mb-1">Sem histórico financeiro</h3>
-                        <p className="text-xs text-gray-400 max-w-[250px]">
+                        <TrendingUp size={32} strokeWidth={1.5} className="text-muted-foreground/30 mb-3" />
+                        <h3 className="text-sm font-medium text-muted-foreground mb-1">Sem histórico financeiro</h3>
+                        <p className="text-xs text-muted-foreground/70 max-w-[250px]">
                             À medida que você realizar vendas, o crescimento do seu lucro aparecerá aqui.
                         </p>
                     </div>
@@ -192,4 +225,6 @@ export default function ProfitChart() {
             />
         </div >
     );
-}
+});
+
+export default ProfitChart;

@@ -6,29 +6,44 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const MAX_IMPORT_ITEMS = 100;
+
 serve(async (req) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders });
     }
 
+    const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     try {
         const { products } = await req.json();
+
+        if (!Array.isArray(products)) {
+            throw new Error('Invalid payload: products must be an array');
+        }
+
+        if (products.length > MAX_IMPORT_ITEMS) {
+            throw new Error(`Batch limit exceeded. Max ${MAX_IMPORT_ITEMS} products per import.`);
+        }
 
         const authHeader = req.headers.get('Authorization');
         if (!authHeader) {
             throw new Error('Missing Authorization header');
         }
 
-        const supabase = createClient(
+        const userClient = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
             {
                 global: { headers: { Authorization: authHeader } }
             }
         );
 
         // Get user from token
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const { data: { user }, error: userError } = await userClient.auth.getUser();
         if (userError || !user) {
             throw new Error('Invalid user token');
         }
@@ -45,6 +60,14 @@ serve(async (req) => {
         if (profile?.plan !== 'pro') {
             throw new Error('Feature available only for PRO plan.');
         }
+
+        // AUDIT LOG: Start import
+        await supabase.from('audit_logs').insert({
+            user_id: userId,
+            action: 'bulk_import_start',
+            status: 'success',
+            details: { count: products.length }
+        });
 
         const results = {
             inserted: 0,
@@ -148,9 +171,21 @@ serve(async (req) => {
             } catch (err) {
                 console.error(`Error importing item ${item.name}:`, err);
                 results.failed++;
-                results.errors.push({ item: item.name, error: err.message });
+                results.errors.push({ item: item.name || 'Unknown', error: err.message });
             }
         }
+
+        // AUDIT LOG: End import
+        await supabase.from('audit_logs').insert({
+            user_id: userId,
+            action: 'bulk_import_end',
+            status: results.failed === 0 ? 'success' : 'failure',
+            details: { 
+                inserted: results.inserted, 
+                updated: results.updated, 
+                failed: results.failed 
+            }
+        });
 
         return new Response(
             JSON.stringify(results),

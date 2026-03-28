@@ -1,96 +1,148 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { MercadoPagoConfig, Preference } from 'npm:mercadopago';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+// --- Asaas API Helper ---
+async function asaasRequest(endpoint: string, method: string, body?: any) {
+    const apiUrl = Deno.env.get('ASAAS_API_URL') ?? 'https://sandbox.asaas.com/api';
+    const apiKey = Deno.env.get('ASAAS_API_KEY') ?? '';
 
-  try {
-    const { userId, email } = await req.json();
-
-    if (!userId) {
-      throw new Error('User ID is required');
-    }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('first_name, last_name, email')
-      .eq('id', userId)
-      .single();
-
-    if (profileError || !profile) {
-      throw new Error('User profile not found');
-    }
-
-    const client = new MercadoPagoConfig({
-      accessToken: Deno.env.get('MP_ACCESS_TOKEN') ?? ''
-    });
-    const preference = new Preference(client);
-
-    const origin = req.headers.get('origin') || 'http://localhost:5173';
-    const baseUrl = Deno.env.get('FRONTEND_URL') || origin;
-
-    const body = {
-      items: [
-        {
-          id: 'pro_renewal_1_month',
-          title: 'Renovação BeautyStock PRO (1 Mês)',
-          description: 'Renovação do acesso premium por mais 30 dias',
-          picture_url: 'https://beautystock.com.br/icon-512x512.png',
-          quantity: 1,
-          unit_price: 29.90,
-          currency_id: 'BRL',
-        }
-      ],
-      payer: {
-        email: email || profile.email || `user_${userId}@beautystock-customer.com`,
-        name: profile.first_name || 'Cliente',
-        surname: profile.last_name || 'BeautyStock'
-      },
-      back_urls: {
-        success: `${baseUrl}/conta?renewal=success`,
-        failure: `${baseUrl}/conta?renewal=failure`,
-        pending: `${baseUrl}/conta?renewal=pending`
-      },
-      auto_return: 'approved',
-      external_reference: `${userId}::renewal`, // Tagging as renewal
-      payment_methods: {
-        excluded_payment_methods: [],
-        excluded_payment_types: [{ id: 'ticket' }], // Allow PIX and Credit Card, disable boleto for speed
-        installments: 1
-      },
-      statement_descriptor: 'BEAUTYSTOCK PRO'
+    const options: RequestInit = {
+        method,
+        headers: {
+            'Content-Type': 'application/json',
+            'access_token': apiKey,
+            'User-Agent': 'BeautyStock/1.0',
+        },
     };
 
-    const result = await preference.create({ body });
+    if (body) {
+        options.body = JSON.stringify(body);
+    }
 
-    return new Response(
-      JSON.stringify({ init_point: result.init_point, id: result.id }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
+    const response = await fetch(`${apiUrl}${endpoint}`, options);
+    const data = await response.json();
 
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    );
-  }
+    if (!response.ok) {
+        console.error(`[ASAAS] API Error ${response.status}:`, JSON.stringify(data));
+        const errorMsg = data.errors?.[0]?.description || data.message || `Erro na API Asaas (${response.status})`;
+        throw new Error(errorMsg);
+    }
+
+    return data;
+}
+
+// --- Customer Management ---
+async function getOrCreateAsaasCustomer(
+    supabase: any,
+    profile: any,
+    email: string
+): Promise<string> {
+    if (profile.asaas_customer_id) {
+        return profile.asaas_customer_id;
+    }
+
+    const cpf = profile.cpf?.replace(/[^\d]/g, '');
+    const fullName = `${profile.first_name || 'Cliente'} ${profile.last_name || ''}`.trim();
+
+    if (cpf) {
+        try {
+            const searchResult = await asaasRequest(`/v3/customers?cpfCnpj=${cpf}`, 'GET');
+            if (searchResult.data && searchResult.data.length > 0) {
+                const customerId = searchResult.data[0].id;
+                await supabase.from('profiles').update({ asaas_customer_id: customerId }).eq('id', profile.id);
+                return customerId;
+            }
+        } catch (e) {
+            console.warn('[CUSTOMER] Error searching by CPF, will create new:', e);
+        }
+    }
+
+    const newCustomer = await asaasRequest('/v3/customers', 'POST', {
+        name: fullName,
+        email: email,
+        cpfCnpj: cpf,
+        notificationDisabled: true,
+    });
+
+    await supabase.from('profiles').update({ asaas_customer_id: newCustomer.id }).eq('id', profile.id);
+    return newCustomer.id;
+}
+
+serve(async (req) => {
+    if (req.method === 'OPTIONS') {
+        return new Response('ok', { headers: corsHeaders });
+    }
+
+    try {
+        const { userId, email } = await req.json();
+
+        if (!userId) {
+            throw new Error('User ID is required');
+        }
+
+        const supabase = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        );
+
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        if (profileError || !profile) {
+            throw new Error('User profile not found');
+        }
+
+        // Get or create Asaas customer
+        const customerId = await getOrCreateAsaasCustomer(
+            supabase,
+            profile,
+            email || profile.email || `user_${userId}@beautystock-customer.com`
+        );
+
+        // Create single charge for renewal
+        const today = new Date().toISOString().split('T')[0];
+
+        const charge = await asaasRequest('/v3/payments', 'POST', {
+            customer: customerId,
+            billingType: 'UNDEFINED', // Let user choose on checkout page
+            value: 29.90,
+            dueDate: today,
+            description: 'Renovação BeautyStock PRO (1 Mês)',
+            externalReference: `${userId}::renewal`,
+            callback: {
+                successUrl: 'https://www.beautystockapp.com/dashboard',
+                autoRedirect: true
+            }
+        });
+
+        console.log(`Renewal charge created: ${charge.id}`);
+
+        return new Response(
+            JSON.stringify({
+                init_point: charge.invoiceUrl, // Same field name for frontend compatibility
+                id: charge.id,
+            }),
+            {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 200,
+            }
+        );
+
+    } catch (error: any) {
+        return new Response(
+            JSON.stringify({ error: error.message }),
+            {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 400,
+            }
+        );
+    }
 });

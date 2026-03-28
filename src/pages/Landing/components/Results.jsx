@@ -4,7 +4,7 @@ import { XCircle, CheckCircle2, ChevronRight } from 'lucide-react';
 
 export default function Results() {
     return (
-        <section id="resultados" className="py-20 lg:py-28 bg-[#fdf2f8] border-b border-pink-50">
+        <section id="resultados" className="py-12 lg:py-28 bg-[#fdf2f8] border-b border-pink-50">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
                 <div className="text-center max-w-2xl mx-auto mb-16">
@@ -34,13 +34,13 @@ export default function Results() {
                         initial={{ opacity: 0, x: -20 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        className="w-full md:w-1/2 bg-white rounded-3xl p-8 lg:p-10 shadow-sm border border-gray-100 opacity-80 filter grayscale-[50%]"
+                        className="w-full md:w-1/2 bg-white rounded-[1.5rem] sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-sm border border-gray-100 opacity-80 filter grayscale-[50%]"
                     >
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-sm font-bold mb-8">
+                        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gray-100 text-gray-600 text-[11px] sm:text-sm font-bold mb-6 sm:mb-8">
                             <XCircle size={18} /> ANTES
                         </div>
 
-                        <ul className="space-y-6">
+                        <ul className="space-y-4 sm:space-y-6">
                             <li className="flex items-start gap-4 text-gray-500 text-base md:text-lg font-medium">
                                 <XCircle className="text-gray-400 shrink-0 mt-0.5" />
                                 <span>Anotações soltas no caderno e papéis perdidos.</span>
@@ -66,13 +66,13 @@ export default function Results() {
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.2 }}
-                        className="w-full md:w-1/2 bg-white rounded-3xl p-8 lg:p-10 shadow-2xl shadow-pink-100/50 border-2 border-pink-200 transform md:-translate-y-4"
+                        className="w-full md:w-1/2 bg-white rounded-[1.5rem] sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl shadow-pink-100/50 border-2 border-pink-200 transform md:-translate-y-4"
                     >
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-pink-100 text-[#ec4899] text-sm font-bold mb-8 shadow-sm">
+                        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-pink-100 text-[#ec4899] text-[11px] sm:text-sm font-bold mb-6 sm:mb-8 shadow-sm">
                             <CheckCircle2 size={18} /> DEPOIS (COM PRO)
                         </div>
 
-                        <ul className="space-y-6">
+                        <ul className="space-y-4 sm:space-y-6">
                             <li className="flex items-start gap-4 text-gray-900 text-base md:text-lg font-semibold">
                                 <CheckCircle2 className="text-[#ec4899] shrink-0 mt-0.5" />
                                 <span>Controle total na palma da mão, onde estiver.</span>

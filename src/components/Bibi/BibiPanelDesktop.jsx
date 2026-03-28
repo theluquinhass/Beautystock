@@ -18,96 +18,108 @@ export default function BibiPanelDesktop({
 
     return (
         <div className="hidden lg:flex fixed inset-0 z-[60] pointer-events-none">
-            {/* Dark area outside panel */}
+            {/* Overlay invisível para fechar */}
             <div
-                className="absolute inset-0 transition-opacity bg-transparent" // transparent to act as invisible overlay just to close
+                className="absolute inset-0"
                 onClick={onClose}
                 style={{ pointerEvents: 'auto' }}
             />
 
-            {/* Desktop Panel */}
+            {/* Painel */}
             <div className={cn(
-                "absolute bottom-6 right-6 w-[520px] max-h-[85vh] h-[640px] bg-white rounded-[24px] shadow-2xl pointer-events-auto flex flex-col overflow-hidden border border-gray-200 transition-all duration-300",
+                "absolute bottom-6 right-6 w-[520px] max-h-[85vh] h-[640px]",
+                "bg-card rounded-[24px] shadow-soft border border-border",
+                "pointer-events-auto flex flex-col overflow-hidden",
+                "transition-all duration-300",
                 "animate-in slide-in-from-bottom-8 fade-in zoom-in-95"
             )}>
-                {/* Gradient Header */}
-                <div className="px-6 py-5 flex items-center gap-4 relative z-10 flex-shrink-0 bg-gradient-to-r from-pink-50/80 to-purple-50/80 border-b border-gray-100">
-                    <div className="p-2.5 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl shadow-md shadow-pink-200 border border-pink-400/50">
+
+                {/* ── Header ── */}
+                <div className="px-6 py-5 flex items-center gap-4 relative z-10 flex-shrink-0 bg-accent/40 border-b border-border">
+                    <div className="p-2.5 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl shadow-pink border border-pink-400/30">
                         <Sparkles className="text-white" size={24} />
                     </div>
+
                     <div className="flex-1">
                         <div className="flex items-center gap-2">
-                            <h2 className="text-xl font-black text-gray-800 tracking-tight leading-none">Bibi</h2>
+                            <h2 className="text-xl font-black text-foreground tracking-tight leading-none">Bibi</h2>
                             {isPro && (
                                 <span className="bg-gradient-to-r from-pink-500 to-purple-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest shadow-sm">
                                     PRO
                                 </span>
                             )}
                         </div>
-                        <p className="text-xs text-gray-500 font-bold tracking-wide mt-1">Consultora de Estoque & Lucro</p>
+                        <p className="text-xs text-muted-foreground font-bold tracking-wide mt-1">Consultora de Estoque & Lucro</p>
                     </div>
 
                     <div className="flex flex-col items-end gap-2">
                         <button
                             onClick={onClose}
-                            className="p-1.5 bg-white shadow-sm border border-gray-100 hover:bg-gray-50 text-gray-400 hover:text-gray-600 rounded-full transition-colors focus:ring-2 focus:ring-pink-200"
+                            className="p-1.5 bg-card shadow-soft border border-border hover:bg-muted text-muted-foreground hover:text-foreground rounded-full transition-colors focus:ring-2 focus:ring-ring"
                         >
                             <X size={18} />
                         </button>
-                        <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                        <span className="text-[9px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full border border-success/20 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
                             Análise atualizada
                         </span>
                     </div>
                 </div>
 
-                {/* Tabs */}
+                {/* ── Tabs ── */}
                 <BibiTabs activeTab={activeTab} setActiveTab={setActiveTab} isPro={isPro} isDesktop={true} />
 
-                {/* Content Area */}
-                <div className="flex-1 overflow-y-auto no-scrollbar relative bg-gray-50/30">
+                {/* ── Conteúdo ── */}
+                <div className="flex-1 overflow-y-auto no-scrollbar relative bg-muted/20">
                     {loading ? (
-                        <div className="h-full flex flex-col items-center justify-center text-pink-300 space-y-4">
+                        <div className="h-full flex flex-col items-center justify-center text-primary space-y-4">
                             <Sparkles size={40} className="animate-pulse" />
-                            <span className="text-sm font-bold text-gray-500 uppercase tracking-widest animate-pulse">Analisando dados...</span>
+                            <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest animate-pulse">
+                                Analisando dados...
+                            </span>
                         </div>
                     ) : (
-                        <div className="p-5 pb-24"> {/* pb-24 for footer space */}
+                        <div className="p-5 pb-24">
+
+                            {/* ── Tab: Resumo ── */}
                             {activeTab === 'resumo' && (
                                 <>
-                                    <h3 className="font-extrabold text-gray-800 text-lg mb-4">
+                                    <h3 className="font-extrabold text-foreground text-lg mb-4">
                                         Analisando os últimos {insights?.summary?.checkedPeriod || 30} dias
                                     </h3>
                                     <BibiSummaryMiniKpis summary={insights.summary} />
 
+                                    {/* Upgrade CTA — FREE */}
                                     {!isPro && (
-                                        <div className="mt-8 bg-white border border-pink-100 p-6 rounded-2xl shadow-lg shadow-pink-100/50 text-center relative overflow-hidden group">
-                                            <div className="absolute top-0 right-0 -mr-6 -mt-6 text-pink-500/5 group-hover:scale-110 transition-transform">
+                                        <div className="mt-8 bg-card border border-border p-6 rounded-2xl shadow-soft text-center relative overflow-hidden group">
+                                            <div className="absolute top-0 right-0 -mr-6 -mt-6 text-primary/5 group-hover:scale-110 transition-transform">
                                                 <Sparkles size={120} />
                                             </div>
-                                            <div className="bg-pink-50 w-16 h-16 rounded-2xl border border-pink-100 flex items-center justify-center mx-auto mb-4 relative z-10 shadow-inner">
-                                                <Lock className="text-pink-500" size={32} />
+                                            <div className="bg-accent w-16 h-16 rounded-2xl border border-primary/15 flex items-center justify-center mx-auto mb-4 relative z-10">
+                                                <Lock className="text-primary" size={32} />
                                             </div>
-                                            <h3 className="text-gray-800 font-black text-xl leading-tight mb-2 relative z-10">Desbloqueie o Command Center</h3>
-                                            <p className="text-gray-500 text-sm font-medium mb-6 leading-relaxed relative z-10 max-w-[280px] mx-auto">
+                                            <h3 className="text-foreground font-black text-xl leading-tight mb-2 relative z-10">
+                                                Desbloqueie o Command Center
+                                            </h3>
+                                            <p className="text-muted-foreground text-sm font-medium mb-6 leading-relaxed relative z-10 max-w-[280px] mx-auto">
                                                 A Bibi completa cria listas prontas para o WhatsApp, monitora lucro em risco e revela seus produtos campeões.
                                             </p>
                                             <a
                                                 href="/conta"
-                                                className="inline-block bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold py-3 px-8 rounded-xl shadow-md hover:shadow-lg transition-all relative z-10 w-full lg:w-auto"
+                                                className="inline-block bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold py-3 px-8 rounded-xl shadow-pink hover:opacity-90 transition-all relative z-10 w-full lg:w-auto"
                                             >
                                                 Ver Planos PRO
                                             </a>
                                         </div>
                                     )}
 
+                                    {/* Prioridades — PRO */}
                                     {isPro && (
-                                        <div className="mt-6 border-t border-gray-100 pt-6">
+                                        <div className="mt-6 border-t border-border pt-6">
                                             <div className="flex items-center gap-2 mb-4">
-                                                <span className="w-1.5 h-6 bg-pink-500 rounded-full"></span>
-                                                <h3 className="font-bold text-gray-800 text-[15px]">Prioridades Críticas</h3>
+                                                <span className="w-1.5 h-6 bg-primary rounded-full" />
+                                                <h3 className="font-bold text-foreground text-[15px]">Prioridades Críticas</h3>
                                             </div>
-                                            {/* Show top 2 restock alerts in summary */}
                                             {sortedRestockAlerts.slice(0, 2).map((item, idx) => (
                                                 <BibiInsightCard
                                                     key={item.id || idx}
@@ -118,13 +130,14 @@ export default function BibiPanelDesktop({
                                                 />
                                             ))}
                                             {sortedRestockAlerts.length === 0 && (
-                                                <p className="text-sm font-medium text-gray-400">Nenhum risco crítico momento.</p>
+                                                <p className="text-sm font-medium text-muted-foreground">Nenhum risco crítico no momento.</p>
                                             )}
                                         </div>
                                     )}
                                 </>
                             )}
 
+                            {/* ── Tab: Restock ── */}
                             {activeTab === 'restock' && isPro && (
                                 <>
                                     <BibiFilters
@@ -136,16 +149,16 @@ export default function BibiPanelDesktop({
 
                                     <div className="mt-4">
                                         <div className="flex items-center justify-between mb-4">
-                                            <h3 className="font-extrabold text-gray-800 text-[15px]">Recomendações de Compra</h3>
-                                            <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
-                                                {sortedRestockAlerts.length} itens encontrados
+                                            <h3 className="font-extrabold text-foreground text-[15px]">Recomendações de Compra</h3>
+                                            <span className="text-xs font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md border border-border">
+                                                {sortedRestockAlerts.length} itens
                                             </span>
                                         </div>
 
                                         {sortedRestockAlerts.length === 0 ? (
-                                            <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-2xl bg-white">
-                                                <p className="text-lg font-bold text-gray-800">Tudo certo! 💖</p>
-                                                <p className="text-sm text-gray-500 mt-1">Seu estoque está saudável.</p>
+                                            <div className="text-center py-12 border-2 border-dashed border-border rounded-2xl bg-muted/30">
+                                                <p className="text-lg font-bold text-foreground">Tudo certo! 💖</p>
+                                                <p className="text-sm text-muted-foreground mt-1">Seu estoque está saudável.</p>
                                             </div>
                                         ) : (
                                             <div className="space-y-3">
@@ -164,20 +177,18 @@ export default function BibiPanelDesktop({
                                 </>
                             )}
 
+                            {/* ── Tab: Top Produtos ── */}
                             {activeTab === 'top_products' && isPro && (
                                 <>
-                                    <h3 className="font-extrabold text-gray-800 text-lg mb-4">
-                                        Campeões de Lucro
-                                    </h3>
+                                    <h3 className="font-extrabold text-foreground text-lg mb-4">Campeões de Lucro</h3>
                                     <BibiTopProducts products={insights.topProducts} />
                                 </>
                             )}
 
+                            {/* ── Tab: Dead Stock ── */}
                             {activeTab === 'dead_stock' && isPro && (
                                 <>
-                                    <h3 className="font-extrabold text-gray-800 text-lg mb-4">
-                                        Estoque Parado
-                                    </h3>
+                                    <h3 className="font-extrabold text-foreground text-lg mb-4">Estoque Parado</h3>
                                     <BibiDeadStock alerts={insights.deadStockAlerts} />
                                 </>
                             )}
@@ -185,7 +196,7 @@ export default function BibiPanelDesktop({
                     )}
                 </div>
 
-                {/* Footer fixed on desktop (for restock interactions) */}
+                {/* Footer */}
                 {isPro && activeTab !== 'top_products' && activeTab !== 'dead_stock' && (
                     <BibiFooterActions shoppingList={shoppingList} />
                 )}

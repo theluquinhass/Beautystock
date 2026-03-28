@@ -15,6 +15,8 @@ export default function BibiButton() {
     const hiddenRoutes = ['/conta', '/upgrade', '/checkout', '/checkout-pro'];
     if (hiddenRoutes.some(route => location.pathname.startsWith(route))) return null;
 
+    const isMobileHiddenRoute = location.pathname !== '/dashboard';
+
     const handleClick = () => {
         setIsOpen(!isOpen);
     };
@@ -24,8 +26,9 @@ export default function BibiButton() {
             <button
                 onClick={handleClick}
                 className={cn(
-                    "fixed z-50 flex items-center justify-center gap-2 rounded-full p-4 shadow-xl transition-all active:scale-95",
+                    "fixed z-50 items-center justify-center gap-2 rounded-full p-4 shadow-xl transition-all active:scale-95",
                     "bottom-40 right-4 lg:bottom-6 lg:right-6",
+                    isMobileHiddenRoute ? "hidden lg:flex" : "flex",
                     isPro
                         ? "bg-pink-500 hover:bg-pink-600 text-white shadow-pink-500/30 animate-pulse-soft"
                         : "bg-gray-400 hover:bg-gray-500 text-white shadow-gray-400/30",

@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Plus, Trash, ArrowLeft, Lock, Box, Layers, Save, Loader2, ImagePlus, X } from 'lucide-react';
+import { Plus, Trash, ArrowLeft, Box, Layers, Save, Loader2, ImagePlus, X } from 'lucide-react';
 import { usePlan } from '../../hooks/usePlan';
 import { canAddProduct, canAddPhoto, canAddCategory } from '../../lib/planUtils';
 import { uploadProductImage, getPublicImageUrl } from '../../lib/productImages';
 import UpgradeModal from '../../components/UpgradeModal';
+import { validateForm, productSchema } from '../../lib/validation';
 
 const CATEGORY_COLORS = [
     { value: '#ec4899', label: 'Rosa' },
@@ -23,12 +24,10 @@ export default function ProductForm() {
     const [loading, setLoading] = useState(false);
     const { profile, isPro, usage, limits } = usePlan();
 
-    // Image states
     const [imageFile, setImageFile] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [currentImagePath, setCurrentImagePath] = useState(null);
 
-    // Limit States
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [upgradeFeatureName, setUpgradeFeatureName] = useState('');
     const [upgradeLimitText, setUpgradeLimitText] = useState('');
@@ -38,9 +37,13 @@ export default function ProductForm() {
     const [newCategoryData, setNewCategoryData] = useState({ name: '', color: '#ec4899' });
     const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
-    useEffect(() => {
-        fetchCategories();
-    }, []);
+    const [formData, setFormData] = useState({
+        name: '', category_id: '', cost: '', price: '', min_stock: ''
+    });
+    const [variations, setVariations] = useState([{ name: '', stock_quantity: 0 }]);
+
+    useEffect(() => { fetchCategories(); }, []);
+    useEffect(() => { if (id) fetchProduct(); }, [id]);
 
     const fetchCategories = async () => {
         const { data: { user } } = await supabase.auth.getUser();
@@ -48,50 +51,21 @@ export default function ProductForm() {
         if (data) setCategories(data);
     };
 
-    const [formData, setFormData] = useState({
-        name: '',
-        category_id: '',
-        cost: '',
-        price: '',
-        min_stock: ''
-    });
-
-    const [variations, setVariations] = useState([
-        { name: '', stock_quantity: 0 }
-    ]);
-
-    useEffect(() => {
-        if (id) {
-            fetchProduct();
-        }
-    }, [id]);
-
     const fetchProduct = async () => {
         try {
             const { data, error } = await supabase
-                .from('products')
-                .select(`*, variations(*)`)
-                .eq('id', id)
-                .single();
-
+                .from('products').select(`*, variations(*)`).eq('id', id).single();
             if (error) throw error;
             setFormData({
-                name: data.name,
-                category_id: data.category_id || '',
-                cost: data.cost,
-                price: data.price,
-                min_stock: data.min_stock
+                name: data.name, category_id: data.category_id || '',
+                cost: data.cost, price: data.price, min_stock: data.min_stock
             });
-            if (data.variations?.length > 0) {
-                setVariations(data.variations);
-            }
+            if (data.variations?.length > 0) setVariations(data.variations);
             if (data.image_path) {
                 setCurrentImagePath(data.image_path);
                 setImagePreview(getPublicImageUrl(data.image_path));
             }
-        } catch (error) {
-            toast.error('Erro ao carregar produto');
-        }
+        } catch { toast.error('Erro ao carregar produto'); }
     };
 
     const handleImageChange = (e) => {
@@ -101,171 +75,72 @@ export default function ProductForm() {
             setShowUpgradeModal(true);
             return;
         }
-
         const file = e.target.files[0];
         if (!file) return;
-
-        if (file.size > 2 * 1024 * 1024) {
-            toast.error('A imagem deve ter no máximo 2MB');
-            return;
-        }
-
+        if (file.size > 2 * 1024 * 1024) { toast.error('A imagem deve ter no máximo 2MB'); return; }
         setImageFile(file);
         setImagePreview(URL.createObjectURL(file));
     };
 
-    const handleRemoveImage = () => {
-        setImageFile(null);
-        setImagePreview(null);
-        setCurrentImagePath(null);
-    };
-
-    const handleInputChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
+    const handleRemoveImage = () => { setImageFile(null); setImagePreview(null); setCurrentImagePath(null); };
+    const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
     const handleVariationChange = (index, field, value) => {
-        const newVariations = [...variations];
-        newVariations[index][field] = value;
-        setVariations(newVariations);
+        const n = [...variations]; n[index][field] = value; setVariations(n);
     };
-
-    const addVariation = () => {
-        setVariations([...variations, { name: '', stock_quantity: 0 }]);
-    };
-
-    const removeVariation = (index) => {
-        const newVariations = variations.filter((_, i) => i !== index);
-        setVariations(newVariations);
-    };
+    const addVariation = () => setVariations([...variations, { name: '', stock_quantity: 0 }]);
+    const removeVariation = (index) => setVariations(variations.filter((_, i) => i !== index));
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Validate cost vs price
-        if (Number(formData.cost) > Number(formData.price)) {
-            toast.error('O custo não pode ser maior que o preço de venda!');
-            return;
-        }
-
-        // Validate min_stock
-        if (Number(formData.min_stock) < 1) {
-            toast.error('O estoque mínimo precisa ser 1 ou maior!');
-            return;
-        }
-
-        // Guard: Check limit if creating new product
+        const totalStock = variations.reduce((acc, v) => acc + Number(v.stock_quantity), 0);
+        const { success, errors, data: validatedData } = validateForm(productSchema, {
+            ...formData, 
+            cost_price: Number(formData.cost), 
+            price: Number(formData.price), 
+            stock: totalStock 
+        });
+        if (!success) { toast.error(errors[0]); return; }
+        if (validatedData.cost_price > validatedData.price) { toast.error('O custo não pode ser maior que o preço de venda!'); return; }
+        if (Number(formData.min_stock) < 1) { toast.error('O estoque mínimo precisa ser 1 ou maior!'); return; }
         if (!id && !canAddProduct(profile, usage.productsCount)) {
-            setUpgradeFeatureName('produtos');
-            setUpgradeLimitText(`${limits?.products || 30} produtos`);
-            setShowUpgradeModal(true);
-            return;
+            setUpgradeFeatureName('produtos'); setUpgradeLimitText(`${limits?.products || 30} produtos`);
+            setShowUpgradeModal(true); return;
         }
-
         setLoading(true);
-
         try {
             const { data: { user } } = await supabase.auth.getUser();
-
-            if (!id && !canAddProduct(profile, usage.productsCount)) {
-                const { count } = await supabase
-                    .from('products')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('user_id', user.id);
-
-                if (!canAddProduct(profile, count)) {
-                    setLoading(false);
-                    setUpgradeFeatureName('produtos');
-                    setUpgradeLimitText(`${limits?.products || 30} produtos`);
-                    setShowUpgradeModal(true);
-                    return;
-                }
-            }
-
             const productPayload = {
-                user_id: user.id,
-                name: formData.name,
-                category: '', // Legacy support or clear it entirely, but db still has it unless dropped. We'll set it to empty later when safe.
-                category_id: formData.category_id || null, // Updated relation
-                cost: Number(formData.cost),
-                price: Number(formData.price),
-                min_stock: Number(formData.min_stock)
+                user_id: user.id, name: formData.name, category: '',
+                category_id: formData.category_id || null,
+                cost: Number(formData.cost), price: Number(formData.price), min_stock: Number(formData.min_stock)
             };
-
             let productId = id;
-
             if (id) {
-                // Update Product
-                const { error } = await supabase
-                    .from('products')
-                    .update(productPayload)
-                    .eq('id', id);
+                const { error } = await supabase.from('products').update(productPayload).eq('id', id);
                 if (error) throw error;
             } else {
-                // Create Product
-                const { data, error } = await supabase
-                    .from('products')
-                    .insert(productPayload)
-                    .select()
-                    .single();
+                const { data, error } = await supabase.from('products').insert(productPayload).select().single();
                 if (error) throw error;
                 productId = data.id;
             }
-
-            // Upload image if selected
             if (imageFile) {
                 try {
                     const uploadedPath = await uploadProductImage(imageFile, user.id, productId);
                     await supabase.from('products').update({ image_path: uploadedPath }).eq('id', productId);
-                } catch (imgError) {
-                    console.error('Error uploading image:', imgError);
-                    toast.error('Produto salvo, mas houve um erro ao enviar a imagem.');
-                }
+                } catch { toast.error('Produto salvo, mas houve um erro ao enviar a imagem.'); }
             } else if (currentImagePath === null && id) {
-                // Image was removed
                 await supabase.from('products').update({ image_path: null }).eq('id', productId);
             }
-
-            // Handle Variations
-            // 1. Upsert all current variations
-            // 2. Delete removed variations (complex in UI, simple approach: just upsert those present)
-            // To handle deletions correctly without complex state tracking: 
-            // simple logic: we only added upsert logic here. 
-            // If user removed a variation row, we should delete it. 
-            // For MVP, we'll implement full sync optionally or just upsert.
-            // Let's do a smart thing: get existing IDs for this product, compare with current form IDs.
-
-            // But for Simplicity (MVP):
-            // We will loop through form variations. If it has an ID, update. If not, insert.
-            // We won't auto-delete variations removed from UI in this simple version unless we track original list.
-            // Wait, "CRUD completo" implies delete.
-            // I'll skip auto-delete logic for simplicity unless user clicks a delete button on a previously saved item.
-            // If `removeVariation` is called, it removes from state. If that item had an ID, we should probably record it to delete on save?
-            // Or we can just delete it immediately if it has an ID? -> Better UX: delete immediately with confirm?
-            // Let's make `removeVariation` delete from DB immediately if it has ID.
-
             for (const v of variations) {
-                const variationPayload = {
-                    product_id: productId,
-                    name: v.name,
-                    stock_quantity: Number(v.stock_quantity)
-                };
-
-                if (v.id) {
-                    await supabase.from('variations').update(variationPayload).eq('id', v.id);
-                } else {
-                    await supabase.from('variations').insert(variationPayload);
-                }
+                const vp = { product_id: productId, name: v.name, stock_quantity: Number(v.stock_quantity) };
+                if (v.id) await supabase.from('variations').update(vp).eq('id', v.id);
+                else await supabase.from('variations').insert(vp);
             }
-
             toast.success('Produto salvo com sucesso!');
             navigate('/produtos');
         } catch (error) {
-            console.error('FULL ERROR:', error);
-            toast.error(`Erro ao salvar produto: ${error.message || date.message || 'Erro desconhecido'}`);
-        } finally {
-            setLoading(false);
-        }
+            toast.error(`Erro ao salvar produto: ${error.message || 'Erro desconhecido'}`);
+        } finally { setLoading(false); }
     };
 
     const handleRemoveMutation = async (index) => {
@@ -274,14 +149,9 @@ export default function ProductForm() {
             if (!confirm('Isso excluirá a variação do banco de dados imediatamente. Continuar?')) return;
             try {
                 await supabase.from('variations').delete().eq('id', v.id);
-                removeVariation(index);
-                toast.success('Variação removida');
-            } catch (e) {
-                toast.error('Erro ao remover variação');
-            }
-        } else {
-            removeVariation(index);
-        }
+                removeVariation(index); toast.success('Variação removida');
+            } catch { toast.error('Erro ao remover variação'); }
+        } else { removeVariation(index); }
     };
 
     const handleCreateCategory = async (e) => {
@@ -289,109 +159,92 @@ export default function ProductForm() {
         setIsCreatingCategory(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
-
-            const { count } = await supabase
-                .from('categories')
-                .select('*', { count: 'exact', head: true })
-                .eq('user_id', user.id);
-
+            const { count } = await supabase.from('categories').select('*', { count: 'exact', head: true }).eq('user_id', user.id);
             if (!canAddCategory(profile, count)) {
-                setIsCreatingCategory(false);
-                setShowCategoryModal(false);
-                setUpgradeFeatureName('categorias');
-                setUpgradeLimitText(`${limits?.categories || 5} categorias`);
-                setShowUpgradeModal(true);
-                return;
+                setIsCreatingCategory(false); setShowCategoryModal(false);
+                setUpgradeFeatureName('categorias'); setUpgradeLimitText(`${limits?.categories || 5} categorias`);
+                setShowUpgradeModal(true); return;
             }
-
             if (categories.some(c => c.name.toLowerCase() === newCategoryData.name.trim().toLowerCase())) {
-                toast.error('Categoria já existe!');
-                setIsCreatingCategory(false);
-                return;
+                toast.error('Categoria já existe!'); setIsCreatingCategory(false); return;
             }
-
-            const { data, error } = await supabase
-                .from('categories')
-                .insert({
-                    user_id: user.id,
-                    name: newCategoryData.name.trim(),
-                    color: newCategoryData.color
-                })
-                .select()
-                .single();
-
+            const { data, error } = await supabase.from('categories')
+                .insert({ user_id: user.id, name: newCategoryData.name.trim(), color: newCategoryData.color })
+                .select().single();
             if (error) throw error;
-
             setCategories([...categories, data].sort((a, b) => a.name.localeCompare(b.name)));
             setFormData({ ...formData, category_id: data.id });
             setShowCategoryModal(false);
             setNewCategoryData({ name: '', color: '#ec4899' });
             toast.success('Categoria criada!');
-        } catch (err) {
-            toast.error('Erro ao criar categoria.');
-        } finally {
-            setIsCreatingCategory(false);
-        }
+        } catch { toast.error('Erro ao criar categoria.'); }
+        finally { setIsCreatingCategory(false); }
     };
+
+    /* ── shared input classes ── */
+    const inputCls = "w-full p-3 bg-input-bg border border-input text-foreground placeholder:text-muted-foreground rounded-xl focus:bg-card focus:ring-2 focus:ring-ring focus:border-ring transition-all outline-none text-sm";
+    const labelCls = "text-sm font-medium text-muted-foreground";
 
     return (
         <div className="pb-24">
+            {/* Header */}
             <div className="flex items-center gap-3 mb-6">
                 <button
                     onClick={() => navigate('/produtos')}
-                    className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    className="p-2 -ml-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
                 >
                     <ArrowLeft size={24} />
                 </button>
-                <h1 className="text-2xl font-bold text-gray-800">{id ? 'Editar Produto' : 'Novo Produto'}</h1>
+                <h1 className="text-2xl font-bold text-foreground">
+                    {id ? 'Editar Produto' : 'Novo Produto'}
+                </h1>
             </div>
 
             <form onSubmit={handleSubmit} className="max-w-3xl mx-auto flex flex-col gap-6">
-                {/* General Data */}
-                <div className="bg-white p-6 rounded-2xl shadow-soft border border-gray-100 flex flex-col gap-6">
-                    <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                        <Box size={20} className="text-pink-500" />
+
+                {/* ── Detalhes ── */}
+                <div className="bg-card p-6 rounded-2xl shadow-soft border border-border flex flex-col gap-6">
+                    <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                        <Box size={20} className="text-primary" />
                         Detalhes do Produto
                     </h3>
 
-                    {/* Image Upload */}
                     <div className="flex flex-col sm:flex-row gap-6 items-start">
+                        {/* Image upload */}
                         <div className="w-full sm:w-32 h-32 flex-shrink-0 relative group">
                             {imagePreview ? (
                                 <>
                                     <img
                                         src={imagePreview}
                                         alt="Preview"
-                                        className="w-full h-full object-cover rounded-2xl shadow-sm border border-gray-200"
+                                        className="w-full h-full object-cover rounded-2xl shadow-sm border border-border"
                                     />
                                     <button
                                         type="button"
                                         onClick={handleRemoveImage}
-                                        className="absolute -top-2 -right-2 bg-white text-red-500 rounded-full p-1.5 shadow-md border border-gray-100 hover:scale-110 hover:bg-red-50 transition-all z-10"
+                                        className="absolute -top-2 -right-2 bg-card text-destructive rounded-full p-1.5 shadow-md border border-border hover:scale-110 hover:bg-destructive/10 transition-all z-10"
                                     >
                                         <X size={14} strokeWidth={3} />
                                     </button>
                                 </>
                             ) : (
-                                <label className="w-full h-full flex flex-col items-center justify-center bg-gray-50 hover:bg-pink-50 border-2 border-dashed border-gray-200 hover:border-pink-300 rounded-2xl cursor-pointer transition-colors group-hover:shadow-inner">
-                                    <ImagePlus className="w-8 h-8 text-gray-400 group-hover:text-pink-500 mb-2 transition-colors" />
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider group-hover:text-pink-500">Adicionar Foto</span>
-                                    <input
-                                        type="file"
-                                        accept="image/jpeg, image/png, image/webp"
-                                        className="hidden"
-                                        onChange={handleImageChange}
-                                    />
+                                <label className="w-full h-full flex flex-col items-center justify-center bg-muted hover:bg-accent border-2 border-dashed border-border hover:border-primary/40 rounded-2xl cursor-pointer transition-colors">
+                                    <ImagePlus className="w-8 h-8 text-muted-foreground group-hover:text-primary mb-2 transition-colors" />
+                                    <span className="text-[10px] font-bold text-muted-foreground group-hover:text-primary uppercase tracking-wider transition-colors">
+                                        Adicionar Foto
+                                    </span>
+                                    <input type="file" accept="image/jpeg, image/png, image/webp" className="hidden" onChange={handleImageChange} />
                                 </label>
                             )}
                         </div>
 
+                        {/* Fields */}
                         <div className="flex-1 space-y-4 w-full">
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-gray-700">Nome do Produto</label>
+                                <label className={labelCls}>Nome do Produto</label>
                                 <input
                                     name="name"
-                                    className="w-full p-3 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all"
+                                    className={inputCls}
                                     value={formData.name}
                                     onChange={handleInputChange}
                                     required
@@ -399,20 +252,18 @@ export default function ProductForm() {
                                 />
                             </div>
 
-                            <div className="space-y-1.5 focus-within:z-10 relative">
-                                <label className="text-sm font-medium text-gray-700">Categoria</label>
+                            <div className="space-y-1.5">
+                                <label className={labelCls}>Categoria</label>
                                 <div className="flex gap-2">
                                     <select
                                         name="category_id"
-                                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all outline-none appearance-none"
+                                        className={inputCls + " appearance-none"}
                                         value={formData.category_id}
                                         onChange={handleInputChange}
                                     >
                                         <option value="">Selecione uma categoria...</option>
                                         {categories.map(cat => (
-                                            <option key={cat.id} value={cat.id}>
-                                                {cat.name}
-                                            </option>
+                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
                                         ))}
                                     </select>
                                     <button
@@ -421,12 +272,11 @@ export default function ProductForm() {
                                             if (!canAddCategory(profile, usage.categoriesCount)) {
                                                 setUpgradeFeatureName('categorias');
                                                 setUpgradeLimitText(`${limits?.categories || 5} categorias`);
-                                                setShowUpgradeModal(true);
-                                                return;
+                                                setShowUpgradeModal(true); return;
                                             }
                                             setShowCategoryModal(true);
                                         }}
-                                        className="px-4 bg-pink-50 text-pink-600 border border-pink-100 rounded-xl hover:bg-pink-100 transition-colors flex items-center justify-center font-bold"
+                                        className="px-4 bg-accent text-primary border border-primary/20 rounded-xl hover:bg-primary/15 transition-colors flex items-center justify-center font-bold flex-shrink-0"
                                         title="Nova Categoria"
                                     >
                                         <Plus size={20} />
@@ -435,95 +285,85 @@ export default function ProductForm() {
                             </div>
 
                             <div className="grid grid-cols-3 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-gray-700">Custo (R$)</label>
-                                    <input
-                                        name="cost"
-                                        type="number"
-                                        step="0.01"
-                                        className="w-full p-3 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all"
-                                        value={formData.cost}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-gray-700">Venda (R$)</label>
-                                    <input
-                                        name="price"
-                                        type="number"
-                                        step="0.01"
-                                        className="w-full p-3 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all"
-                                        value={formData.price}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-gray-700">Estoque Mín.</label>
-                                    <input
-                                        name="min_stock"
-                                        type="number"
-                                        className="w-full p-3 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-200 focus:border-pink-300 transition-all"
-                                        value={formData.min_stock}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                </div>
+                                {[
+                                    { name: 'cost', label: 'Custo (R$)', type: 'number' },
+                                    { name: 'price', label: 'Venda (R$)', type: 'number' },
+                                    { name: 'min_stock', label: 'Estoque Mín.', type: 'number' },
+                                ].map(field => (
+                                    <div key={field.name} className="space-y-1.5">
+                                        <label className={labelCls}>{field.label}</label>
+                                        <input
+                                            name={field.name}
+                                            type={field.type}
+                                            step="0.01"
+                                            className={inputCls}
+                                            value={formData[field.name]}
+                                            onChange={handleInputChange}
+                                            required
+                                        />
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Variations */}
-                <div className="bg-white p-6 rounded-2xl shadow-soft border border-gray-100">
+                {/* ── Variações ── */}
+                <div className="bg-card p-6 rounded-2xl shadow-soft border border-border">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                            <Layers size={20} className="text-pink-500" />
+                        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                            <Layers size={20} className="text-primary" />
                             Variações
                         </h3>
                         <button
                             type="button"
                             onClick={addVariation}
-                            className="bg-pink-50 text-pink-600 hover:bg-pink-100 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-1"
+                            className="bg-accent text-primary hover:bg-primary/15 border border-primary/20 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-1"
                         >
                             <Plus size={14} /> Adicionar
                         </button>
                     </div>
 
                     {variations.length === 0 && (
-                        <div className="text-center py-8 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                        <div className="text-center py-8 text-muted-foreground bg-muted/50 rounded-xl border border-dashed border-border">
                             Nenhuma variação adicionada.
                         </div>
                     )}
 
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         {variations.map((v, index) => (
-                            <div key={index} className="flex gap-3 items-end p-4 bg-gray-50/50 rounded-xl border border-gray-100 hover:border-pink-100 transition-colors">
+                            <div
+                                key={index}
+                                className="flex gap-3 items-end p-4 bg-muted/40 rounded-xl border border-border hover:border-primary/20 transition-colors"
+                            >
                                 <div className="flex-[2] space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Nome / Tamanho</label>
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                        Nome / Tamanho
+                                    </label>
                                     <input
                                         value={v.name}
                                         onChange={(e) => handleVariationChange(index, 'name', e.target.value)}
-                                        className="w-full p-2.5 bg-white border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-200 transition-all text-sm"
+                                        className={inputCls}
                                         placeholder="Ex: 50ml"
                                         required
                                     />
                                 </div>
                                 <div className="flex-1 space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Estoque</label>
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                        Estoque
+                                    </label>
                                     <input
                                         type="number"
                                         value={v.stock_quantity}
                                         onChange={(e) => handleVariationChange(index, 'stock_quantity', e.target.value)}
-                                        className="w-full p-2.5 bg-white border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-200 transition-all text-sm"
+                                        className={inputCls}
                                         required
                                     />
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => handleRemoveMutation(index)}
-                                    className="p-2.5 bg-white text-gray-400 hover:text-red-500 hover:bg-red-50 border border-gray-200 rounded-lg transition-all"
+                                    className="p-2.5 bg-muted text-muted-foreground hover:text-destructive hover:bg-destructive/10 border border-border rounded-xl transition-all flex-shrink-0"
                                     title="Remover variação"
                                 >
                                     <Trash size={18} />
@@ -533,28 +373,38 @@ export default function ProductForm() {
                     </div>
                 </div>
 
+                {/* ── Submit ── */}
                 <button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-gray-900 to-gray-800 text-white font-bold py-4 rounded-2xl shadow-lg shadow-gray-200 hover:shadow-xl active:scale-[0.99] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                     disabled={loading}
+                    className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-2xl shadow-pink hover:opacity-90 active:scale-[0.99] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                    {loading ? <Loader2 className="animate-spin" /> : <Save size={20} />}
+                    {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
                     {loading ? 'Salvando...' : 'Salvar Produto'}
                 </button>
             </form>
 
-            {/* Create Category Modal inline */}
+            {/* ── Modal Nova Categoria ── */}
             {showCategoryModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-                    <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-xl relative animate-enter">
-                        <h2 className="text-xl font-bold text-gray-800 mb-4">Nova Categoria</h2>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-card w-full max-w-sm rounded-3xl p-6 shadow-soft border border-border relative animate-in fade-in zoom-in duration-200">
+                        <div className="flex items-center justify-between mb-5">
+                            <h2 className="text-xl font-bold text-foreground">Nova Categoria</h2>
+                            <button
+                                type="button"
+                                onClick={() => setShowCategoryModal(false)}
+                                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
 
                         <form onSubmit={handleCreateCategory} className="space-y-4">
                             <div className="space-y-1.5">
-                                <label className="text-sm font-bold text-gray-700">Nome</label>
+                                <label className={labelCls}>Nome</label>
                                 <input
                                     type="text"
-                                    className="input w-full"
+                                    className={inputCls}
                                     value={newCategoryData.name}
                                     onChange={e => setNewCategoryData({ ...newCategoryData, name: e.target.value })}
                                     placeholder="Ex: Perfume"
@@ -564,21 +414,18 @@ export default function ProductForm() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-bold text-gray-700">Cor</label>
+                                <label className={labelCls}>Cor</label>
                                 <div className="flex flex-wrap gap-3 items-center">
                                     {CATEGORY_COLORS.map(color => (
                                         <button
                                             key={color.value}
                                             type="button"
                                             onClick={() => setNewCategoryData({ ...newCategoryData, color: color.value })}
-                                            className={`w-10 h-10 rounded-full transition-all flex items-center justify-center ${newCategoryData.color === color.value ? 'ring-4 ring-pink-100 scale-110 shadow-sm' : 'hover:scale-105'
-                                                }`}
+                                            className={`w-10 h-10 rounded-full transition-all flex items-center justify-center ${newCategoryData.color === color.value ? 'ring-4 ring-primary/30 scale-110 shadow-sm' : 'hover:scale-105 opacity-80 hover:opacity-100'}`}
                                             style={{ backgroundColor: color.value }}
                                             title={color.label}
                                         />
                                     ))}
-
-                                    {/* Custom Color Picker Option */}
                                     <div className="relative" title="Cor Personalizada">
                                         <input
                                             type="color"
@@ -586,15 +433,9 @@ export default function ProductForm() {
                                             onChange={e => setNewCategoryData({ ...newCategoryData, color: e.target.value })}
                                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                         />
-                                        <div
-                                            className={`w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 via-purple-500 to-cyan-500 flex items-center justify-center transition-all ${!CATEGORY_COLORS.some(c => c.value === newCategoryData.color) ? 'ring-4 ring-pink-100 scale-110 shadow-sm' : 'hover:scale-105 opacity-80'
-                                                }`}
-                                        >
+                                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 via-purple-500 to-cyan-500 flex items-center justify-center transition-all ${!CATEGORY_COLORS.some(c => c.value === newCategoryData.color) ? 'ring-4 ring-primary/30 scale-110 shadow-sm' : 'hover:scale-105 opacity-70 hover:opacity-100'}`}>
                                             {!CATEGORY_COLORS.some(c => c.value === newCategoryData.color) ? (
-                                                <div
-                                                    className="w-6 h-6 rounded-full border-2 border-white shadow-inner"
-                                                    style={{ backgroundColor: newCategoryData.color }}
-                                                />
+                                                <div className="w-6 h-6 rounded-full border-2 border-white shadow-inner" style={{ backgroundColor: newCategoryData.color }} />
                                             ) : (
                                                 <span className="text-white text-lg font-bold leading-none">+</span>
                                             )}
@@ -603,11 +444,11 @@ export default function ProductForm() {
                                 </div>
                             </div>
 
-                            <div className="pt-4 flex gap-3">
+                            <div className="pt-2 flex gap-3">
                                 <button
                                     type="button"
                                     onClick={() => setShowCategoryModal(false)}
-                                    className="flex-1 py-3 text-gray-500 font-bold bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
+                                    className="flex-1 py-3 text-muted-foreground font-bold bg-muted hover:bg-border rounded-xl transition-colors"
                                     disabled={isCreatingCategory}
                                 >
                                     Cancelar
@@ -615,7 +456,7 @@ export default function ProductForm() {
                                 <button
                                     type="submit"
                                     disabled={isCreatingCategory}
-                                    className="flex-1 py-3 text-white font-bold bg-pink-500 hover:bg-pink-600 rounded-xl shadow-soft transition-all flex justify-center items-center"
+                                    className="flex-1 py-3 text-primary-foreground font-bold bg-primary hover:opacity-90 rounded-xl shadow-pink transition-all flex justify-center items-center"
                                 >
                                     {isCreatingCategory ? <Loader2 className="animate-spin w-5 h-5" /> : 'Salvar'}
                                 </button>

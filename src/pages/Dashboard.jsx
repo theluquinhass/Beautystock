@@ -4,7 +4,7 @@ import StatCard from '../components/Dashboard/StatCard';
 import BestSellers from '../components/Dashboard/BestSellers';
 import RecentMovements from '../components/Dashboard/RecentMovements';
 import FAB from '../components/Dashboard/FAB';
-import { Package, TrendingUp, Wallet, ArrowUpRight, Loader2 } from 'lucide-react';
+import { Package, TrendingUp, Wallet, ArrowUpRight, Loader2, CircleDollarSign } from 'lucide-react';
 import { useDashboard } from '../hooks/useDashboard';
 import ProfitChart from '../components/ProfitChart';
 import TopDebtorsCard from '../components/Dashboard/TopDebtorsCard';
@@ -41,46 +41,55 @@ export default function Dashboard() {
             <GettingStartedChecklist />
 
             {/* Metrics Row */}
-            <div className="flex flex-col gap-4 mb-6 lg:grid lg:grid-cols-12 lg:gap-6">
+            <div className="flex flex-col gap-4 mb-6 xl:grid xl:grid-cols-12 xl:gap-6">
 
-                {/* 1. HERO METRIC: Receivables (Fiado) - The "Money in the street" */}
-                {stats.receivables > 0 ? (
-                    <div onClick={() => navigate('/clientes')} className="cursor-pointer lg:col-span-6">
+                {/* 1. HERO METRIC: Receivables (Fiado) */}
+                {stats.receivables > 0 && (
+                    <div onClick={() => navigate('/clientes')} className="cursor-pointer xl:col-span-3">
                         <StatCard
-                            title="Total a Receber"
+                            title="A Receber"
                             value={`R$ ${stats.receivables.toFixed(2)}`}
-                            subtitle="Clique para cobrar clientes"
+                            subtitle="Clique para cobrar"
                             type="featured"
                             icon={Wallet}
                         />
                     </div>
-                ) : (
-                    <div className="hidden lg:col-span-6" />
                 )}
 
-                {/* 2. Grid for Profit & Sales */}
-                <div className="grid grid-cols-2 gap-3 lg:col-span-6 lg:grid-cols-2 lg:gap-6">
+                {/* 2. Grid for Core Financials (Lucro & Caixa) */}
+                <div className={`grid grid-cols-2 gap-3 lg:gap-6 ${stats.receivables > 0 ? 'xl:col-span-6' : 'xl:col-span-8'}`}>
                     <div className="h-full" data-onboarding="profit-card">
                         <StatCard
                             title="Lucro (Mês)"
                             value={`R$ ${stats.profit.toFixed(2)}`}
+                            subtitle="Reflete vendas feitas"
                             type="primary"
                             icon={TrendingUp}
                         />
                     </div>
                     <div className="h-full">
                         <StatCard
-                            title="Vendas Hoje"
-                            value={stats.salesToday}
-                            subtitle={`${stats.itemsSoldToday} unid. em ${stats.salesToday} vendas`}
-                            icon={ArrowUpRight}
+                            title="Caixa (Mês)"
+                            value={`R$ ${stats.receivedThisMonth.toFixed(2)}`}
+                            subtitle="Entradas reais em $$"
+                            type="success"
+                            icon={CircleDollarSign}
                         />
                     </div>
                 </div>
 
-                {/* 3. Alerts */}
+                {/* 3. Vendas Hoje */}
+                <div className={`h-full ${stats.receivables > 0 ? 'xl:col-span-3' : 'xl:col-span-4'}`}>
+                    <StatCard
+                        title="Vendas Hoje"
+                        value={stats.salesToday}
+                        subtitle={`${stats.itemsSoldToday} unid. (${stats.salesToday} vendas)`}
+                        icon={ArrowUpRight}
+                    />
+                </div>
+                {/* 4. Alerts */}
                 {stats.lowStock > 0 && (
-                    <div onClick={() => navigate('/produtos')} className="cursor-pointer lg:col-span-12 mt-2 lg:mt-0">
+                    <div onClick={() => navigate('/produtos')} className="cursor-pointer xl:col-span-12 mt-2 lg:mt-0">
                         <StatCard
                             title="Estoque Baixo"
                             value={stats.lowStock}

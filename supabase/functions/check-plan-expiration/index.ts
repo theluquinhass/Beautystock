@@ -94,6 +94,50 @@ serve(async (req) => {
       }
     }
 
+    // 5. Process EXPIRED plans (Downgrade and Notify)
+    // Any PRO user whose expires_at is strictly in the past (< NOW)
+    const { data: expiredProfiles, error: expiredError } = await supabase
+      .from("profiles")
+      .select("id, first_name")
+      .eq("plan", "pro")
+      .not("expires_at", "is", null)
+      .lt("expires_at", now.toISOString());
+
+    if (expiredError) {
+      console.error("Failed to fetch expired profiles:", expiredError);
+    } else {
+      console.log(`Found ${expiredProfiles?.length || 0} users with expired plans.`);
+
+      for (const expired of expiredProfiles || []) {
+        // 1. Downgrade to free
+        const { error: downgradeError } = await supabase
+          .from("profiles")
+          .update({ plan: "free", is_recurring: false })
+          .eq("id", expired.id);
+        
+        if (downgradeError) {
+          console.error(`Failed to downgrade user ${expired.id}:`, downgradeError);
+          continue;
+        }
+
+        // 2. Insert cancellation Notification
+        const { error: notifyError } = await supabase.from("notifications").insert({
+          user_id: expired.id,
+          type: "plan_expired",
+          title: "❌ Plano PRO Expirado",
+          message: "O seu plano PRO expirou por falta de pagamento. Você voltou ao plano Grátis. Renove agora para recuperar seus recursos e remover os limites restritos.",
+          cta_label: "Renovar Agora",
+          cta_url: "/conta?renovar=1",
+        });
+
+        if (notifyError) {
+          console.error(`Failed to send expiration notification to ${expired.id}:`, notifyError);
+        } else {
+          notificationsCreated++;
+        }
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

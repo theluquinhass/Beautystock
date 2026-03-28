@@ -26,14 +26,14 @@ export default function DesktopSidebar() {
     };
 
     return (
-        <aside className="hidden lg:flex flex-col w-64 h-screen bg-white border-r border-gray-100 sticky top-0 flex-shrink-0 z-50">
+        <aside className="hidden lg:flex flex-col w-64 h-screen bg-card border-r border-border sticky top-0 flex-shrink-0 z-50">
             {/* Logo Area */}
-            <div className="h-20 flex items-center justify-between px-6 border-b border-gray-50">
+            <div className="h-20 flex items-center justify-between px-6 border-b border-border/50">
                 <Link to="/dashboard" className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-sm">
                         B
                     </div>
-                    <span className="text-xl font-black text-gray-800 tracking-tight">Beauty<span className="text-pink-500">Stock</span></span>
+                    <span className="text-xl font-black text-foreground tracking-tight">Beauty<span className="text-primary">Stock</span></span>
                 </Link>
                 <NotificationBell align="left" />
             </div>
@@ -52,7 +52,7 @@ export default function DesktopSidebar() {
 
             {/* Navigation Links */}
             <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto no-scrollbar">
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 ml-2 mt-2">Menu Principal</div>
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 ml-2 mt-2">Menu Principal</div>
                 {navItems.map((item) => {
                     const isActive = location.pathname === item.path;
                     return (
@@ -66,15 +66,15 @@ export default function DesktopSidebar() {
                             className={cn(
                                 "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group",
                                 isActive
-                                    ? "bg-pink-50 text-pink-600 font-bold"
-                                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-800 font-medium"
+                                    ? "bg-primary/10 text-primary font-bold"
+                                    : "text-muted-foreground hover:bg-muted hover:text-foreground font-medium"
                             )}
                         >
                             <item.icon
                                 size={20}
                                 strokeWidth={isActive ? 2.5 : 2}
                                 className={cn(
-                                    isActive ? "text-pink-500" : "text-gray-400 group-hover:text-gray-600 transition-colors"
+                                    isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground transition-colors"
                                 )}
                             />
                             <span className="text-sm">{item.label}</span>
@@ -84,19 +84,22 @@ export default function DesktopSidebar() {
             </nav>
 
             {/* UPGRADE / Footer Section */}
-            <div className="p-4 border-t border-gray-50">
+            <div className="p-4 border-t border-border/50">
                 {!isPro ? (
-                    <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-2xl p-4 border border-pink-100">
-                        <div className="flex items-center gap-2 mb-2 text-pink-600">
-                            <Crown size={16} className="fill-pink-200" />
+                    <div className="bg-gradient-to-br from-rose-50 to-pink-50 dark:from-pink-500/10 dark:to-pink-900/10 rounded-2xl p-4 border border-pink-100 dark:border-pink-500/20 relative overflow-hidden group">
+                        {/* Glow Effect */}
+                        <div className="absolute -top-12 -right-12 w-32 h-32 bg-pink-500/20 rounded-full blur-3xl opacity-0 dark:group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+
+                        <div className="flex items-center gap-2 mb-2 text-pink-600 dark:text-pink-400 relative z-10">
+                            <Crown size={16} className="fill-pink-200 dark:fill-pink-500" />
                             <span className="font-bold text-xs uppercase tracking-wide">Plano Free</span>
                         </div>
-                        <p className="text-xs text-gray-600 font-medium mb-3 leading-tight">
+                        <p className="text-xs text-muted-foreground font-medium mb-3 leading-tight relative z-10">
                             Desbloqueie clientes ilimitados e gráficos de lucro.
                         </p>
                         <button
                             onClick={() => navigate('/upgrade')}
-                            className="w-full bg-white text-pink-600 font-bold text-xs py-2 rounded-xl shadow-sm border border-pink-100 hover:bg-pink-50 transition-colors"
+                            className="w-full bg-card dark:bg-pink-500/10 text-primary dark:text-pink-300 font-bold text-xs py-2 rounded-xl shadow-sm border border-primary/20 dark:border-pink-500/30 hover:bg-primary/10 dark:hover:bg-pink-500/20 transition-colors relative z-10"
                         >
                             Fazer Upgrade
                         </button>
@@ -104,9 +107,9 @@ export default function DesktopSidebar() {
                 ) : (
                     <button
                         onClick={handleSignOut}
-                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-red-600 font-medium transition-colors group"
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-muted-foreground hover:bg-muted hover:text-red-500 font-medium transition-colors group"
                     >
-                        <LogOut size={20} className="text-gray-400 group-hover:text-red-500" />
+                        <LogOut size={20} className="text-muted-foreground group-hover:text-red-500" />
                         <span className="text-sm">Sair do sistema</span>
                     </button>
                 )}

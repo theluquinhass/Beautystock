@@ -28,7 +28,7 @@ export default function AdminDashboard() {
 
     // Hardcoded alerts for demonstration/SaaS realism (could be dynamic in the future)
     const systemAlerts = [
-        // { type: 'error', title: 'Webhook do Mercado Pago falhando', message: 'Últimas 3 tentativas retornaram erro 500. Verifique as chaves de API.' },
+        // { type: 'error', title: 'Webhook do Asaas falhando', message: 'Últimas 3 tentativas retornaram erro 500. Verifique as chaves de API.' },
         // { type: 'warning', title: 'Certificado SSL', message: 'Faltam 14 dias para expirar o certificado da API.' }
     ];
 
@@ -128,7 +128,7 @@ export default function AdminDashboard() {
     };
 
     return (
-        <div className="p-4 sm:p-8 pb-32 max-w-7xl mx-auto bg-gray-50/50 min-h-screen">
+        <div className="p-4 sm:p-8 pb-32 max-w-7xl mx-auto bg-[#f8f9fc] min-h-screen">
             <AdminHeader />
             <SystemAlerts alerts={systemAlerts} />
             <StatsGrid metrics={metrics} loading={loading} />

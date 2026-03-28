@@ -11,40 +11,48 @@ export default function AdminUsersKPIs({ kpis, activeFilter, onKpiClick }) {
             icon: Users,
             color: 'text-blue-600',
             bg: 'bg-blue-50',
-            borderColor: 'border-blue-200'
+            activeBg: 'bg-blue-600',
+            accentLine: 'bg-blue-500',
+            borderColor: 'border-blue-200',
         },
         {
             id: 'pro',
             label: 'PRO Ativos',
             value: kpis.pro,
             icon: Crown,
-            color: 'text-pink-600',
-            bg: 'bg-pink-50',
-            borderColor: 'border-pink-200'
+            color: 'text-amber-600',
+            bg: 'bg-amber-50',
+            activeBg: 'bg-amber-500',
+            accentLine: 'bg-amber-500',
+            borderColor: 'border-amber-200',
         },
         {
             id: 'expiring',
             label: 'Vencem em 7 Dias',
             value: kpis.expiringSoon,
             icon: AlertTriangle,
-            color: 'text-yellow-600',
-            bg: 'bg-yellow-50',
-            borderColor: 'border-yellow-200'
+            color: 'text-orange-600',
+            bg: 'bg-orange-50',
+            activeBg: 'bg-orange-500',
+            accentLine: 'bg-orange-500',
+            borderColor: 'border-orange-200',
         },
         {
             id: 'expired',
             label: 'Expirados',
             value: kpis.expired,
             icon: UserX,
-            color: 'text-red-600',
-            bg: 'bg-red-50',
-            borderColor: 'border-red-200'
+            color: 'text-rose-600',
+            bg: 'bg-rose-50',
+            activeBg: 'bg-rose-500',
+            accentLine: 'bg-rose-500',
+            borderColor: 'border-rose-200',
         },
     ];
 
     return (
-        <div className="mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto pb-4 sm:pb-0 hide-scrollbar snap-x snap-mandatory">
-            <div className="flex sm:grid sm:grid-cols-4 gap-4 w-max sm:w-full min-w-[300px]">
+        <div className="mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto pb-3 sm:pb-0 hide-scrollbar snap-x snap-mandatory">
+            <div className="flex sm:grid sm:grid-cols-4 gap-3 w-max sm:w-full">
                 {cards.map((card) => {
                     const isActive = activeFilter === card.id;
 
@@ -53,34 +61,33 @@ export default function AdminUsersKPIs({ kpis, activeFilter, onKpiClick }) {
                             key={card.id}
                             onClick={() => onKpiClick(card.id)}
                             className={cn(
-                                "snap-center shrink-0 w-[200px] sm:w-auto text-left relative overflow-hidden transition-all duration-200 group p-4 sm:p-5 rounded-2xl border shadow-sm",
+                                'snap-center shrink-0 w-[180px] sm:w-auto text-left relative overflow-hidden transition-all duration-200 group p-4 sm:p-5 rounded-2xl border shadow-sm',
                                 isActive
-                                    ? `bg-white shadow-md border-b-4 border-b-[${card.color}] ${card.borderColor}`
-                                    : "bg-white border-gray-100 hover:border-gray-300 hover:bg-gray-50/50 hover:-translate-y-0.5"
+                                    ? `bg-white ${card.borderColor} shadow-md`
+                                    : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-md hover:-translate-y-0.5'
                             )}
                         >
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className={cn("p-2 rounded-xl transition-transform group-hover:scale-110", card.bg)}>
-                                    <card.icon size={18} className={card.color} strokeWidth={2.5} />
+                            {/* Active accent line */}
+                            {isActive && <div className={`absolute top-0 left-0 right-0 h-0.5 ${card.accentLine}`} />}
+
+                            <div className="flex items-center gap-2.5 mb-3">
+                                <div className={cn(
+                                    'p-2 rounded-xl transition-all',
+                                    isActive ? `${card.bg} scale-110` : `${card.bg} group-hover:scale-110`
+                                )}>
+                                    <card.icon size={16} className={card.color} strokeWidth={2.5} />
                                 </div>
-                                <span className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 leading-tight">
                                     {card.label}
                                 </span>
                             </div>
 
-                            <div className="flex items-baseline gap-2">
-                                <span className={cn(
-                                    "text-2xl sm:text-3xl font-black tracking-tight",
-                                    isActive ? "text-gray-900" : "text-gray-800"
-                                )}>
-                                    {card.value}
-                                </span>
-                            </div>
-
-                            {/* Active Indicator Bar (Animated) */}
-                            {isActive && (
-                                <div className={cn("absolute bottom-0 left-0 right-0 h-1", card.bg)} />
-                            )}
+                            <p className={cn(
+                                'text-2xl sm:text-3xl font-black tracking-tight',
+                                isActive ? card.color : 'text-gray-800'
+                            )}>
+                                {card.value}
+                            </p>
                         </button>
                     );
                 })}
@@ -88,7 +95,3 @@ export default function AdminUsersKPIs({ kpis, activeFilter, onKpiClick }) {
         </div>
     );
 }
-
-// Add this to your global CSS (index.css) if not present to hide the scrollbar but keep functionality
-// .hide-scrollbar::-webkit-scrollbar { display: none; }
-// .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

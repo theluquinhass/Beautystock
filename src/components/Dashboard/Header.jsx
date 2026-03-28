@@ -11,21 +11,21 @@ export default function Header({ userName, subtitle }) {
         <header className="relative z-50 mb-6 pt-2 flex justify-between items-start">
             <div>
                 <div className="flex items-center gap-2">
-                    <h1 className="text-xl font-bold text-gray-800">
+                    <h1 className="text-xl font-bold text-foreground">
                         Olá, {userName} <span className="inline-block animate-wave">👋</span>
                     </h1>
                     {isPro ? (
-                        <span className="bg-yellow-100 text-yellow-700 text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border border-yellow-200 uppercase tracking-tighter">
+                        <span className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border border-yellow-200 dark:border-yellow-800 uppercase tracking-tighter">
                             <Crown size={8} className="fill-yellow-600" /> PRO
                         </span>
                     ) : (
-                        <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full font-bold border border-gray-200 uppercase tracking-tighter">
+                        <span className="bg-muted text-muted-foreground text-[10px] px-2 py-0.5 rounded-full font-bold border border-border uppercase tracking-tighter">
                             Free
                         </span>
                     )}
                 </div>
                 <div>
-                    <p className="text-gray-500 mt-1 text-sm font-medium">
+                    <p className="text-muted-foreground mt-1 text-sm font-medium">
                         {subtitle || "Aqui está o resumo do seu negócio hoje"}
                     </p>
                 </div>
@@ -34,7 +34,7 @@ export default function Header({ userName, subtitle }) {
                 <NotificationBell />
                 <button
                     onClick={signOut}
-                    className="text-gray-400 hover:text-pink-500 transition-colors p-2"
+                    className="text-muted-foreground hover:text-primary transition-colors p-2"
                     title="Sair"
                 >
                     <LogOut size={20} />

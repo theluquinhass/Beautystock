@@ -1,8 +1,9 @@
+import { memo } from 'react';
 import { MessageCircle, Copy, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getPublicImageUrl } from '../../lib/productImages';
 
-export default function ProductCardPublic({ product, catalog, handleOrder }) {
+const ProductCardPublic = memo(function ProductCardPublic({ product, catalog, handleOrder }) {
     if (!product) return null;
 
     const handleCopy = () => {
@@ -36,6 +37,7 @@ export default function ProductCardPublic({ product, catalog, handleOrder }) {
                     className="absolute inset-0 w-full h-full object-cover z-10 opacity-0 transition-opacity duration-700 sm:group-hover:scale-105 transform origin-center"
                     onLoad={(e) => e.target.classList.remove('opacity-0')}
                     loading="lazy"
+                    decoding="async"
                 />
 
                 {/* Decorative glow overlay on hover */}
@@ -111,4 +113,6 @@ export default function ProductCardPublic({ product, catalog, handleOrder }) {
             </div>
         </div>
     );
-}
+});
+
+export default ProductCardPublic;

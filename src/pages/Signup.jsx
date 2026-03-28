@@ -4,6 +4,8 @@ import toast from 'react-hot-toast';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { rateLimiter } from '../lib/rateLimiter';
+import { validateForm, signupSchema } from '../lib/validation';
 
 // Formata CPF visualmente: 123.456.789-00
 function formatCPF(value) {
@@ -32,6 +34,14 @@ export default function Signup() {
 
     const handleSignUp = async (e) => {
         e.preventDefault();
+
+        // Rate limiting: bloqueia abuso de cadastro
+        if (!rateLimiter.canProceed('signup')) {
+            const wait = rateLimiter.getWaitTime('signup');
+            toast.error(`Muitas tentativas de cadastro. Aguarde ${wait}s.`);
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -44,8 +54,14 @@ export default function Signup() {
                 throw new Error('CPF inválido. Verifique e tente novamente.');
             }
 
-            if (password.length < 6) {
-                throw new Error('A senha deve ter pelo menos 6 caracteres.');
+            // Validação Zod (email + senha forte: 8+ chars, maiúscula, número)
+            const { success, errors } = validateForm(signupSchema, {
+                name: `${firstName} ${lastName}`,
+                email,
+                password,
+            });
+            if (!success) {
+                throw new Error(errors[0]);
             }
 
             if (password !== confirmPassword) {
@@ -67,6 +83,7 @@ export default function Signup() {
 
             if (error) throw error;
 
+            rateLimiter.reset('signup');
             setShowSuccess(true);
             toast.success('Cadastro realizado com sucesso!');
         } catch (error) {

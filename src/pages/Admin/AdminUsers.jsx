@@ -231,7 +231,7 @@ export default function AdminUsers() {
     };
 
     return (
-        <div className="p-4 sm:p-8 pb-32 max-w-7xl mx-auto min-h-screen relative" onClick={() => setActionUser(null)}>
+        <div className="p-4 sm:p-8 pb-32 max-w-7xl mx-auto min-h-screen relative bg-[#f8f9fc]" onClick={() => setActionUser(null)}>
 
             <AdminUsersHeader
                 searchTerm={searchTerm}
@@ -247,7 +247,7 @@ export default function AdminUsers() {
             />
 
             {/* White container for Desktop filters and List */}
-            <div className="bg-transparent sm:bg-white sm:rounded-3xl sm:shadow-sm sm:border sm:border-gray-100 flex flex-col sm:p-2 overflow-hidden mb-6">
+            <div className="bg-transparent sm:bg-white sm:rounded-3xl sm:shadow-sm sm:border sm:border-gray-100 flex flex-col overflow-hidden mb-6">
 
                 <div className="px-4 py-3 border-b border-gray-100 hidden sm:block bg-gray-50/50 rounded-t-2xl">
                     <AdminUsersFilters
@@ -296,23 +296,23 @@ export default function AdminUsers() {
             {/* Pagination Controls */}
             {total > 0 && (
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                    <div className="text-sm font-bold text-gray-500 text-center sm:text-left">
-                        Mostrando <span className="text-gray-900">{Math.min(page * LIMIT, total)}</span> de <span className="text-gray-900">{total}</span> usuários
+                    <div className="text-sm font-medium text-gray-400 text-center sm:text-left">
+                        Mostrando <span className="font-black text-gray-800">{Math.min(page * LIMIT, total)}</span> de <span className="font-black text-gray-800">{total}</span> usuários
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
                         <button
                             disabled={page === 1}
                             onClick={() => setPage(page - 1)}
-                            className="flex-1 sm:flex-none px-4 py-2.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors shadow-sm text-sm"
+                            className="flex-1 sm:flex-none px-5 py-2.5 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-gray-200 disabled:hover:text-gray-600 transition-all shadow-sm text-sm"
                         >
-                            Anterior
+                            ← Anterior
                         </button>
                         <button
                             disabled={page * LIMIT >= total}
                             onClick={() => setPage(page + 1)}
-                            className="flex-1 sm:flex-none px-4 py-2.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors shadow-sm text-sm"
+                            className="flex-1 sm:flex-none px-5 py-2.5 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-gray-200 disabled:hover:text-gray-600 transition-all shadow-sm text-sm"
                         >
-                            Próxima
+                            Próxima →
                         </button>
                     </div>
                 </div>

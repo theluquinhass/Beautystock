@@ -32,7 +32,7 @@ export default function Layout() {
     ];
 
     return (
-        <div className="flex bg-gray-50 h-screen overflow-hidden font-sans">
+        <div className="flex bg-background h-screen overflow-hidden font-sans">
 
             {/* SaaS Desktop Sidebar (Hidden on Mobile) */}
             <DesktopSidebar />
@@ -68,7 +68,7 @@ export default function Layout() {
                 </main>
 
                 {/* Mobile Bottom Navigation Bar (Hidden on Desktop) */}
-                <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-3 flex justify-between items-center z-50 shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.05)]">
+                <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border px-6 py-3 flex justify-between items-center z-50 shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.3)]">
                     {navItems.map((item) => {
                         const isActive = location.pathname === item.path;
                         return (
@@ -81,7 +81,7 @@ export default function Layout() {
                                 }
                                 className={cn(
                                     "flex flex-col items-center gap-1 transition-colors duration-200",
-                                    isActive ? "text-primary" : "text-gray-400 hover:text-gray-600"
+                                    isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
                                 <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />

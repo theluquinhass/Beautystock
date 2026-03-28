@@ -22,12 +22,16 @@ export default function Movements() {
         navigate('/movimentacoes/nova');
     };
 
-    if (loading) return <div className="h-screen flex items-center justify-center text-pink-500"><Loader2 className="animate-spin" size={32} /></div>;
+    if (loading) return (
+        <div className="h-screen flex items-center justify-center text-primary bg-background">
+            <Loader2 className="animate-spin" size={32} />
+        </div>
+    );
 
     return (
         <div className="pb-24">
-            <div className="flex items-center justify-between mb-4">
-                <h1 className="text-2xl font-bold text-gray-800">Extrato de Movimentações</h1>
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="text-2xl font-bold text-foreground">Extrato de Movimentações</h1>
             </div>
 
             <div className="flex flex-col gap-3">
@@ -36,46 +40,55 @@ export default function Movements() {
                     const productName = m.variations?.products?.name || 'Produto';
                     const variationName = m.variations?.name || '';
                     const clientName = m.customers?.name;
-                    // Fallback price if unit_price is null (for old records)
                     const totalValue = (m.unit_price || m.variations?.products?.price || 0) * m.quantity;
 
                     return (
-                        <div key={m.id} className="card p-4 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex items-center gap-4">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${!isEntry ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                        <div
+                            key={m.id}
+                            className="card p-4 flex justify-between items-center gap-4 hover:border-border-strong hover:shadow-card-hover transition-all"
+                        >
+                            {/* Ícone + Info */}
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${!isEntry
+                                        ? 'bg-success/15 text-success'
+                                        : 'bg-destructive/15 text-destructive'
                                     }`}>
-                                    {!isEntry ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
+                                    {!isEntry
+                                        ? <ArrowDownLeft size={20} strokeWidth={2.5} />
+                                        : <ArrowUpRight size={20} strokeWidth={2.5} />
+                                    }
                                 </div>
-                                <div>
-                                    <h3 className="font-semibold text-gray-800 text-sm leading-tight">
-                                        {productName} <span className="text-gray-400 font-normal">• {variationName}</span>
+
+                                <div className="min-w-0">
+                                    <h3 className="font-semibold text-foreground text-sm leading-tight truncate">
+                                        {productName}{' '}
+                                        <span className="text-muted-foreground font-normal">• {variationName}</span>
                                     </h3>
-                                    <div className="flex flex-col mt-1">
-                                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                                            <span className="flex items-center gap-1">
-                                                <Calendar size={10} />
-                                                {format(new Date(m.date), 'dd/MM/yyyy')}
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
+                                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                            <Calendar size={10} />
+                                            {format(new Date(m.date), 'dd/MM/yyyy')}
+                                        </span>
+                                        {clientName && (
+                                            <span className="flex items-center gap-1 text-xs text-primary font-medium">
+                                                <User size={10} />
+                                                {clientName}
                                             </span>
-                                            {clientName && (
-                                                <span className="flex items-center gap-1 text-pink-500 font-medium">
-                                                    <User size={10} />
-                                                    {clientName}
-                                                </span>
-                                            )}
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="text-right">
-                                <div className={`font-bold ${!isEntry ? 'text-green-600' : 'text-red-500'}`}>
+                            {/* Valor + badges */}
+                            <div className="text-right flex-shrink-0">
+                                <div className={`font-bold text-sm ${!isEntry ? 'text-success' : 'text-destructive'}`}>
                                     {!isEntry ? '+' : '-'} R$ {totalValue.toFixed(2)}
                                 </div>
-                                <div className="text-xs text-gray-400">
+                                <div className="text-xs text-muted-foreground mt-0.5">
                                     {m.quantity} un
                                 </div>
                                 {m.is_on_credit && (
-                                    <span className="inline-block px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded uppercase mt-1">
+                                    <span className="inline-block px-2 py-0.5 bg-destructive/15 text-destructive text-[10px] font-bold rounded-md uppercase mt-1 tracking-wider">
                                         Fiado
                                     </span>
                                 )}
@@ -85,7 +98,7 @@ export default function Movements() {
                 })}
 
                 {movements.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
+                    <div className="text-center py-12 text-muted-foreground">
                         Nenhuma movimentação registrada.
                     </div>
                 )}
@@ -99,7 +112,6 @@ export default function Movements() {
                 limitText={`${limits?.monthly_sales || 60} vendas no mês`}
                 featureName="vendas"
             />
-        </div >
+        </div>
     );
 }
-
