@@ -1,8 +1,8 @@
 # BeautyStock 🌸
 
-**Sistema de gestão para revendedoras de perfumes, maquiagem e cosméticos.**
+> **Gestão simples e inteligente para revendedoras de perfumes, maquiagem e cosméticos.**
 
-O BeautyStock nasceu para substituir o controle feito em cadernos e planilhas por uma ferramenta simples, moderna e pensada para quem vende pelo WhatsApp.
+O **BeautyStock** é um SaaS criado para substituir controles feitos em cadernos e planilhas por uma ferramenta moderna, simples e pensada para a rotina de pequenas revendedoras — especialmente para quem vende pelo WhatsApp.
 
 ## ✨ Principais funcionalidades
 
@@ -14,30 +14,31 @@ O BeautyStock nasceu para substituir o controle feito em cadernos e planilhas po
 - 💳 Controle de valores a receber
 - 🏷️ Categorias e variações de produtos
 - 📊 Dashboard com indicadores
-- 📱 Interface responsiva e mobile-first
 - 🛒 Catálogo online
+- 📱 Interface responsiva e mobile-first
 - 📤 Exportação de dados
 - 🤖 Recursos de assistência inteligente
+- 📲 PWA para instalação no dispositivo
 
 ## 🛠️ Stack
 
-**Frontend**
+### Frontend
 - React
 - Vite
-- TypeScript/JavaScript
+- TypeScript / JavaScript
 - Tailwind CSS
 - React Router
 - Lucide React
 - Recharts
 
-**Backend**
+### Backend & Dados
 - Supabase
 - PostgreSQL
 - Supabase Auth
 - Supabase Storage
-- Edge Functions
+- Supabase Edge Functions
 
-**Outros**
+### Ferramentas
 - PWA
 - Vitest
 - Zod
@@ -45,27 +46,37 @@ O BeautyStock nasceu para substituir o controle feito em cadernos e planilhas po
 
 ## 🏗️ Arquitetura
 
-O projeto é organizado em componentes reutilizáveis, páginas, hooks, contextos e serviços, mantendo a interface separada das regras de negócio e da camada de dados.
+O projeto utiliza uma estrutura baseada em **componentes reutilizáveis, páginas, hooks, contextos e serviços**, buscando manter a interface separada das regras de negócio e da camada de dados.
 
-A autenticação e os dados da aplicação são gerenciados pelo Supabase, enquanto o frontend é construído com React e Vite.
+O Supabase é responsável pela autenticação, banco de dados, armazenamento e funções de backend, enquanto o frontend é construído com React e Vite.
 
 ## 🚀 Executando localmente
 
-```bash
-git clone https://github.com/theluquinhass/Beautystock.git
-cd Beautystock
-npm install
-npm run dev
-```
+    git clone https://github.com/theluquinhass/Beautystock.git
+    cd Beautystock
+    npm install
+    npm run dev
 
-Para conectar ao Supabase, configure as variáveis de ambiente necessárias no arquivo `.env`.
+Configure as variáveis de ambiente necessárias para conectar o projeto ao Supabase.
 
-## 🎯 Objetivo
+## 🎯 Problema que o projeto resolve
 
-Criar uma experiência de gestão mais simples para pequenas revendedoras, com foco em **estoque, vendas, clientes e lucro**, sem a complexidade de um ERP tradicional.
+Muitas revendedoras ainda controlam estoque, vendas e valores a receber em **cadernos, planilhas ou conversas espalhadas pelo WhatsApp**.
+
+O BeautyStock busca centralizar essas informações em uma experiência simples, permitindo acompanhar o negócio e tomar decisões com mais clareza.
+
+## 💡 O que este projeto demonstra
+
+- Desenvolvimento de um produto SaaS do zero
+- Integração com banco de dados e autenticação
+- Desenvolvimento de interfaces responsivas
+- PWA e experiência mobile-first
+- Organização de regras de negócio
+- Integração entre frontend e backend
+- Desenvolvimento orientado a um problema real
 
 ## 📌 Status
 
 **Em desenvolvimento / evolução contínua.**
 
-O BeautyStock é um dos principais projetos do meu portfólio e também um produto SaaS em desenvolvimento.
+O BeautyStock é um dos principais projetos do meu portfólio e um produto SaaS em desenvolvimento.
