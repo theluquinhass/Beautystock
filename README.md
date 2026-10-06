@@ -1,94 +1,71 @@
-n# BeautyStock 🌸
+# BeautyStock 🌸
 
-Sistema de controle de estoque simples para lojas de cosméticos e perfumes. MVP enxuto com React + Supabase.
+**Sistema de gestão para revendedoras de perfumes, maquiagem e cosméticos.**
 
-> 📘 **Project Context**: For detailed architecture, design system, and changelog, see [project_context.md](./project_context.md).
+O BeautyStock nasceu para substituir o controle feito em cadernos e planilhas por uma ferramenta simples, moderna e pensada para quem vende pelo WhatsApp.
 
-## 🚀 Funcionalidades
+## ✨ Principais funcionalidades
 
-- **Autenticação**: Login e Cadastro (Supabase Auth).
-- **Produtos**: CRUD completo com nome, categoria, preço, custo.
-- **Variações**: Gerenciamento de variações (ex: 50ml, 100ml / Vermelho, Rosa) por produto.
-- **Movimentações**: Registro de entradas e saídas (vendas) que atualizam o estoque.
-- **Dashboard**: Visão geral de lucro, vendas e estoque.
-- **Alertas**: Indicadores de estoque baixo.
+- 📦 Controle de estoque
+- 🛍️ Cadastro e gerenciamento de produtos
+- 🔄 Entradas e saídas de estoque
+- 💰 Acompanhamento de vendas e lucro
+- 👥 Gestão de clientes
+- 💳 Controle de valores a receber
+- 🏷️ Categorias e variações de produtos
+- 📊 Dashboard com indicadores
+- 📱 Interface responsiva e mobile-first
+- 🛒 Catálogo online
+- 📤 Exportação de dados
+- 🤖 Recursos de assistência inteligente
 
-## 🛠️ Stack Tecnológica
+## 🛠️ Stack
 
-- **Frontend**: React, Vite
-- **Estilização**: CSS Modules / CSS Puro (Simples e Performático)
-- **Backend & Banco**: Supabase (PostgreSQL + Auth)
-- **Ícones**: Lucide React
-- **Notificações**: React Hot Toast
+**Frontend**
+- React
+- Vite
+- TypeScript/JavaScript
+- Tailwind CSS
+- React Router
+- Lucide React
+- Recharts
 
-## 📂 Estrutura de Pastas
+**Backend**
+- Supabase
+- PostgreSQL
+- Supabase Auth
+- Supabase Storage
+- Edge Functions
 
+**Outros**
+- PWA
+- Vitest
+- Zod
+- XLSX
+
+## 🏗️ Arquitetura
+
+O projeto é organizado em componentes reutilizáveis, páginas, hooks, contextos e serviços, mantendo a interface separada das regras de negócio e da camada de dados.
+
+A autenticação e os dados da aplicação são gerenciados pelo Supabase, enquanto o frontend é construído com React e Vite.
+
+## 🚀 Executando localmente
+
+```bash
+git clone https://github.com/theluquinhass/Beautystock.git
+cd Beautystock
+npm install
+npm run dev
 ```
-/src
-  /components    # Componentes reutilizáveis (Sidebar, Layout, etc)
-  /contexts      # Contextos (Auth)
-  /lib           # Configurações (Supabase)
-  /pages         # Páginas da aplicação
-    /Products    # Listagem e Formulário de Produtos
-    Login.jsx
-    Dashboard.jsx
-    Movements.jsx
-  App.jsx        # Rotas
-  index.css      # Estilos globais
-```
 
-## 🏃‍♂️ Como Rodar Localmente
+Para conectar ao Supabase, configure as variáveis de ambiente necessárias no arquivo `.env`.
 
-1. **Clone o projeto**
-   ```bash
-   git clone <seu-repo>
-   cd BeautyStock
-   ```
+## 🎯 Objetivo
 
-2. **Instale as dependências**
-   ```bash
-   npm install
-   ```
+Criar uma experiência de gestão mais simples para pequenas revendedoras, com foco em **estoque, vendas, clientes e lucro**, sem a complexidade de um ERP tradicional.
 
-3. **Configurar Supabase**
-   - Crie um projeto no [Supabase](https://supabase.com).
-   - Vá em `SQL Editor` e rode o script contido no arquivo `supabase_schema.sql` na raiz deste projeto.
-   - Isso criará as tabelas `products`, `variations`, `movements` e configurará as políticas de segurança.
+## 📌 Status
 
-4. **Variáveis de Ambiente**
-   - Renomeie `.env.example` para `.env`.
-   - Preencha com suas chaves do Supabase:
-     ```
-     VITE_SUPABASE_URL=https://seu-projeto.supabase.co
-     VITE_SUPABASE_ANON_KEY=sua-chave-anon-publica
-     ```
+**Em desenvolvimento / evolução contínua.**
 
-5. **Rodar o projeto**
-   ```bash
-   npm run dev
-   ```
-   Acesse `http://localhost:5173`.
-
-## ☁️ Como Fazer Deploy na Vercel
-
-1. Crie uma conta na [Vercel](https://vercel.com).
-2. Instale a Vercel CLI ou conecte seu repositório GitHub.
-3. Se usar GitHub:
-   - Push do código para o GitHub.
-   - Importe o projeto no dashboard da Vercel.
-   - Nas configurações de "Environment Variables", adicione:
-     - `VITE_SUPABASE_URL`
-     - `VITE_SUPABASE_ANON_KEY`
-   - Clique em **Deploy**.
-
-4. **Configuração de URL no Supabase**:
-   - No painel do Supabase, vá em `Authentication` > `URL Configuration`.
-   - Adicione a URL do seu site (ex: `https://beautystock.vercel.app`) em "Site URL" e "Redirect URLs".
-
-## 📝 Script SQL
-O banco de dados deve ser criado usando o script abaixo (já incluído no projeto):
-
-```sql
--- Executar no SQL Editor do Supabase
--- (Conteúdo completo em supabase_schema.sql)
-```
+O BeautyStock é um dos principais projetos do meu portfólio e também um produto SaaS em desenvolvimento.
